@@ -30,6 +30,15 @@ test('limits require valid allowlisted sensor ranges; defaults do not invent tar
   assert.equal(inspect(fresh(now), ranges, now).issues[0].code, `${cfg.sensors[0][0]}:low`);
 });
 
+test('Vercel KV aliases use the writable REST token', () => {
+  const aliases = { ...env, KV_REST_API_URL: env.UPSTASH_REDIS_REST_URL,
+    KV_REST_API_TOKEN: 'mock-write-token', KV_REST_API_READ_ONLY_TOKEN: 'mock-read-token' };
+  delete aliases.UPSTASH_REDIS_REST_URL; delete aliases.UPSTASH_REDIS_REST_TOKEN;
+  assert.equal(readSettings(aliases).redisToken, 'mock-write-token');
+  delete aliases.KV_REST_API_TOKEN;
+  assert.throws(() => readSettings(aliases));
+});
+
 test('alerts and recoveries require persistence; duplicate calls do not advance confirmation', () => {
   const issues = [{ code: 'sensor:stale', message: 'Sensor stale' }];
   let state = transition(null, issues, now);
