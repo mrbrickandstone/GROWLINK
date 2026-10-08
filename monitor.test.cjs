@@ -5,7 +5,7 @@ const { inspect, transition, readSettings, runMonitor } = require('./lib/monitor
 const now = Date.parse('2026-10-08T05:00:00Z');
 const fresh = time => ({ sensorData: cfg.sensors.map(s => ({ sensorId: s[0], value: 40,
   timestamp: new Date(time).toISOString(), suffix: '%' })) });
-const env = { CRON_SECRET: 'mock-cron', GROWLINK_API_KEY: 'mock-growlink',
+const env = { MONITOR_MODE: 'alerts', CRON_SECRET: 'mock-cron', GROWLINK_API_KEY: 'mock-growlink',
   UPSTASH_REDIS_REST_URL: 'https://test.upstash.io', UPSTASH_REDIS_REST_TOKEN: 'mock-redis',
   RESEND_API_KEY: 'mock-resend', ALERT_FROM: 'Monitor <monitor@example.com>', ALERT_TO: 'recipient@example.com' };
 
@@ -73,7 +73,12 @@ function harness() {
       if (op === 'EVAL') {
         const [count, name, value] = args;
         assert.equal(count, '1');
-        if (key.includes('RPUSH')) snapshots.push(JSON.parse(value));
+        if (key.includes('RPUSH')) {
+          snapshots.push(JSON.parse(value));
+          const list = JSON.parse(keys.get(name) || '[]');
+          list.push(JSON.parse(value));
+          keys.set(name, JSON.stringify(list));
+        }
         else if (keys.get(name) === value) keys.delete(name);
         return ok({ result: 1 });
       }
@@ -109,6 +114,28 @@ test('persisted pending email retries with identical body/key and subsequent run
   await runMonitor({ env, fetcher: h.fetcher, now: now + 900000 });
   assert.equal(h.emails.length, 2);
   assert.equal(h.snapshots.length, 4);
+});
+
+test('learning starts with fresh data, preserves a seven-day baseline, and never sends email', async () => {
+  const h = harness();
+  const learnEnv = { ...env, MONITOR_MODE: 'learn' };
+  delete learnEnv.RESEND_API_KEY; delete learnEnv.ALERT_FROM; delete learnEnv.ALERT_TO;
+  h.setData({ sensorData: [] });
+  let result = await runMonitor({ env: learnEnv, fetcher: h.fetcher, now });
+  assert.equal(result.learning.startedAt, null);
+  h.setData(fresh(now + 300000));
+  result = await runMonitor({ env: learnEnv, fetcher: h.fetcher, now: now + 300000 });
+  assert.equal(result.learning.startedAt, now + 300000);
+  const end = result.learning.endsAt;
+  const key = 'growlink:farber:monitor:v1:baseline';
+  const frozen = h.keys.get(key);
+  h.setData(fresh(end + 1));
+  result = await runMonitor({ env: learnEnv, fetcher: h.fetcher, now: end + 1 });
+  assert.equal(result.learning.windowElapsed, true);
+  assert.equal(h.keys.get(key), frozen);
+  assert.equal(h.emails.length, 0);
+  // Elapsed time alone does not claim a complete week of usable observations.
+  assert.equal(result.learning.completeCaptures, 1);
 });
 
 test('distributed lock blocks overlap before any telemetry/email operations', async () => {

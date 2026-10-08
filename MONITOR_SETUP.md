@@ -2,9 +2,17 @@
 
 Status: implemented on the monitoring branch, not deployed or active. The recipient is supplied privately through `ALERT_TO`; no personal email is stored in source.
 
+## First observation week
+
+The initial mode is `MONITOR_MODE=learn`. In this mode, only Growlink, Redis, and cron authentication are required; Resend and email variables can be added later. No alerts or recommendations are sent and no controller settings are changed. `MONITOR_ENABLED=true` is still required to start capture.
+
+The baseline clock starts only after the first capture with all 16 configured sensors fresh. The window lasts seven elapsed days, then its baseline records freeze; rolling monitoring continues. One baseline record per five-minute time bucket avoids duplicate invocations inflating the sample count. Captures and complete captures are counted separately, with the longest observed gap recorded. Seven elapsed days do not establish complete coverage; inspect record timestamps, missing sensor data, and trailing gaps before making recommendations. Baseline records expire 30 days after their last append, allowing time for review.
+
+Remain in learning mode until that review. Set `MONITOR_MODE=alerts` only when email delivery and desired limits are configured. No automatic switch to advice or equipment control occurs at the end of the window.
+
 ## Activation requirements
 
-1. Configure a Resend account and verify a sending domain/address. Set `RESEND_API_KEY` and `ALERT_FROM` in Vercel. Set `ALERT_TO` to the requested recipient. The provider accepts the email; inbox delivery still requires a real delivery test.
+1. For alerts mode, configure a Resend account and verify a sending domain/address. Set `RESEND_API_KEY` and `ALERT_FROM` in Vercel. Set `ALERT_TO` to the requested recipient. The provider accepts the email; inbox delivery still requires a real delivery test. Skip this step for the initial observation-only week.
 2. Connect an Upstash Redis database for persistent incident state and recent samples. Set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`. Keep the Redis database dedicated to this room's monitor and avoid automatic eviction of its state keys.
 3. Set a randomly generated `CRON_SECRET` and retain the existing `GROWLINK_API_KEY`. Set credentials as sensitive production environment variables. Configure preview environments with monitoring disabled.
 4. Confirm the Vercel plan/scheduler. The desired cadence is every five minutes. Vercel Hobby only permits once-daily cron, which does not support this monitor's intended cadence. If the project plan supports it, replace `vercel.json` with `vercel.monitor.example.json` before production deployment. Otherwise use an approved external scheduler that sends `Authorization: Bearer <CRON_SECRET>` to `/api/monitor` every five minutes. No paid upgrade or external schedule has been created.
