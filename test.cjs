@@ -1,0 +1,9 @@
+const test=require('node:test'),assert=require('node:assert/strict'),handler=require('./api/data.js'),cfg=require('./config.cjs');
+function response(){return {code:200,headers:{},setHeader(k,v){this.headers[k]=v},status(n){this.code=n;return this},json(j){this.body=j;return this}}}
+test('config has 16 unique sensors',()=>{assert.equal(cfg.sensors.length,16);assert.equal(new Set(cfg.sensors.map(s=>s[0])).size,16)});
+test('backend requires setup and auth; forwards only configured sensors and keeps key private',async()=>{
+ delete process.env.GROWLINK_API_KEY;delete process.env.DASHBOARD_PASSWORD;let res=response();await handler({method:'GET',query:{},headers:{}},res);assert.equal(res.code,503);
+ process.env.GROWLINK_API_KEY='test-secret';process.env.DASHBOARD_PASSWORD='test-password';res=response();await handler({method:'GET',query:{},headers:{}},res);assert.equal(res.code,401);
+ const original=global.fetch;let called=false;global.fetch=async(url,opt)=>{called=true;assert.equal(opt.headers['Gl-Api-Key'],'test-secret');assert.equal(opt.headers['Uom-Light'],'16');assert.equal(opt.headers['Uom-Temp'],'1');assert.equal(opt.headers['Uom-Vpd'],'8');assert.equal(opt.headers['Uom-Tds'],'6');assert.equal(JSON.parse(opt.body).sensorIds.length,16);assert.match(url,/sensors\/data\/live$/);return {ok:true,json:async()=>({sensorData:[]})}};
+ try{res=response();await handler({method:'GET',query:{mode:'live'},headers:{authorization:'Basic '+Buffer.from('farber:test-password').toString('base64')}},res);assert(called);assert.equal(res.code,200);assert(!JSON.stringify(res.body).includes('test-secret'));res=response();await handler({method:'GET',query:{mode:'history',hours:'999'},headers:{authorization:'Basic '+Buffer.from('farber:test-password').toString('base64')}},res);assert.equal(res.code,400)}finally{global.fetch=original;delete process.env.GROWLINK_API_KEY;delete process.env.DASHBOARD_PASSWORD}
+});
