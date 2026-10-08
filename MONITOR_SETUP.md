@@ -19,7 +19,15 @@ Remain in learning mode until that review. Set `MONITOR_MODE=alerts` only when e
 5. Configure `MONITOR_RANGES_JSON` only after confirming crop targets and units. With `{}`, the monitor checks freshness and upstream availability only. Per-sensor bounds must contain both numeric `min` and `max`; sensor IDs must be in `config.cjs`. Limits are constant across lighting phases in this version. Sensor units match the existing dashboard's Growlink request headers; verify VWC/EC calibration before setting limits.
 6. After the implementation and recipient are reviewed, set `MONITOR_ENABLED=true` and deploy. Verify an authenticated run, stored samples, alert persistence, real inbox delivery, and a recovery notice before treating the monitor as operational. Deployment protection must permit authorized scheduled requests without exposing the endpoint; its bearer authentication remains required.
 
-## Behavior
+## GitHub scheduler on Vercel Hobby
+
+The included `.github/workflows/growlink-monitor.yml` calls the production monitor on a nominal five-minute schedule and supports a manual run from GitHub's Actions tab. It becomes scheduled only after merging into `main`. No repository checkout or third-party action is used, and the workflow has no GitHub token permissions.
+
+In the repository's Settings → Secrets and variables → Actions, create a repository secret named `CRON_SECRET` with the same value entered privately in Vercel. Because this project's Vercel deployment is protected, create an automation bypass secret in Vercel's project Settings → Deployment Protection, then put it in the GitHub Actions secret `VERCEL_AUTOMATION_BYPASS_SECRET`. Keep both values private and keep deployment protection enabled. This credential permits automation through Vercel protection; the monitor still requires its separate bearer secret.
+
+GitHub scheduling is best effort: jobs can be delayed or dropped, and schedules on inactive public repositories are disabled after 60 days. This is an observation-week option, not a guaranteed five-minute service. Review captures and gaps; use a more reliable scheduler before relying on timely operational alerts. After merging and a READY production deployment, manually run the workflow and confirm the output reports a saved baseline capture. Verify a later scheduled capture before calling collection operational. The workflow logs counts only and never uploads raw observations.
+
+## Sensor and alert behavior
 
 The monitor reads only the 16 configured sensors. It never writes to Growlink controls. Missing values, nonnumeric values, missing timestamps, readings older than five minutes, or timestamps over a minute in the future count as a freshness problem. Zone-less timestamps use UTC, matching the dashboard. The same incident must persist across observations separated by at least five minutes before an alert; recovery must also persist. At five-minute cadence, notification may take roughly five to ten minutes after an issue first becomes observable, in addition to freshness age.
 

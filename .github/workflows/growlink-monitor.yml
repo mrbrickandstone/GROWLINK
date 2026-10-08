@@ -1,0 +1,64 @@
+name: Collect Growlink observations
+
+on:
+  schedule:
+    - cron: '2-57/5 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: growlink-observations
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Save one observation
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: |
+          python3 - <<'PY'
+          import json, os, sys, urllib.request
+
+          secret = os.environ.get('CRON_SECRET', '')
+          if not secret:
+              sys.exit('Add the CRON_SECRET repository Actions secret first.')
+          headers = {'Authorization': 'Bearer ' + secret, 'Accept': 'application/json'}
+          bypass = os.environ.get('VERCEL_AUTOMATION_BYPASS_SECRET', '')
+          if bypass:
+              headers['x-vercel-protection-bypass'] = bypass
+
+          # Never forward credentials through a redirect or print provider response bodies.
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, headers, newurl):
+                  return None
+
+          request = urllib.request.Request(
+              'https://farber-growlink-dashboard.vercel.app/api/monitor', headers=headers)
+          try:
+              with urllib.request.build_opener(NoRedirect).open(request, timeout=70) as response:
+                  result = json.load(response)
+          except urllib.error.HTTPError as error:
+              sys.exit('Monitor request failed: HTTP ' + str(error.code))
+          except Exception:
+              sys.exit('Monitor request failed or returned an invalid response.')
+
+          if not isinstance(result, dict) or result.get('enabled') is not True:
+              sys.exit('Monitor is disabled or has not been deployed.')
+          if result.get('skipped') == 'already running':
+              print('Another capture is already running.')
+              sys.exit(0)
+          if result.get('mode') != 'learn':
+              sys.exit('Expected observation mode; review configuration before continuing.')
+          learning = result.get('learning', {})
+          print('Observation saved. Baseline captures:', learning.get('captures', 0),
+                'Complete captures:', learning.get('completeCaptures', 0),
+                'Longest gap (ms):', learning.get('longestGapMs', 0))
+          if result.get('validData') is not True or result.get('issues', 0):
+              sys.exit('Observation saved with unavailable or stale sensor data; review the dashboard.')
+          PY
