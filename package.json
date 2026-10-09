@@ -1,1 +1,1 @@
-{"name":"farber-growlink-dashboard","version":"1.0.0","private":true,"scripts":{"test":"node --test test.cjs"},"engines":{"node":">=22"}}
+{"name":"farber-growlink-dashboard","version":"1.0.0","private":true,"scripts":{"test":"node --test test.cjs monitor.test.cjs"},"engines":{"node":">=22"}}

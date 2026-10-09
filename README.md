@@ -4,9 +4,9 @@ Farber Growlink dashboard for INTERM FLOWERING, recovered from the production Ve
 
 ## Status
 
-The nine application files match the source hashes from deployment `dpl_4Z74CZwMZJahuyYBHuzpZZFb9aRv`. This README replaces the deployment README, which could not be retrieved completely.
+The recovered baseline's nine application files matched the source hashes from deployment `dpl_4Z74CZwMZJahuyYBHuzpZZFb9aRv`. The monitoring branch adds files and updates test/function configuration. This README replaces the deployment README, which could not be retrieved completely.
 
-The dashboard reads live sensor data and history from Growlink and outside temperature observations from NWS station KHWV. It refreshes while the dashboard is open. Background monitoring and email alerts are not implemented yet. No equipment-control endpoint is exposed.
+The dashboard reads live sensor data and history from Growlink and outside temperature observations from NWS station KHWV. It refreshes while the dashboard is open. Background monitoring and email alerts are implemented on this branch but are not active. No equipment-control endpoint is exposed.
 
 ## Configuration
 
@@ -26,4 +26,4 @@ Run `npm test` with Node.js 22 or newer. The recovered package has no third-part
 
 ## Next work
 
-Add a scheduled read-only monitor, persistent alert state, and email delivery. Camera access will follow after Growlink monitoring is working.
+The monitoring branch adds a read-only monitor with persistent incident state, bounded snapshots, and email delivery. See [MONITOR_SETUP.md](MONITOR_SETUP.md) for activation requirements. It is disabled by default and not deployed. Camera access will follow after Growlink monitoring is working.
