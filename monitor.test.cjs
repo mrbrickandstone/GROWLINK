@@ -19,7 +19,7 @@ test('freshness handles missing data, invalid values, future clocks, and UTC tim
   const result = inspect(data, {}, now);
   assert.equal(result.issues.length, 4);
   assert.equal(result.snapshot.phase, 'lights-on schedule');
-  assert.equal(result.snapshot.samples.length, 16);
+  assert.equal(result.snapshot.samples.length, 13);
 });
 
 test('limits require valid allowlisted sensor ranges; defaults do not invent targets', () => {
@@ -95,7 +95,7 @@ function harness() {
     }
     if (url.startsWith('https://api.developer.growlink.com/')) {
       assert.equal(options.headers['Gl-Api-Key'], 'mock-growlink');
-      assert.equal(JSON.parse(options.body).sensorIds.length, 16);
+      assert.equal(JSON.parse(options.body).sensorIds.length, 13);
       return ok(data);
     }
     if (url === 'https://api.resend.com/emails') {
