@@ -13,14 +13,14 @@ test('Ring links only verified pending accounts, encrypts tokens, refreshes and 
   calls.push({url,opt});if(url.includes('oauth.ring.com')){if(opt.body.get('grant_type')==='refresh_token')refreshes++;return {ok:true,json:async()=>({access_token:'access-secret',refresh_token:'refresh-secret',expires_in:60})}}
   if(url.endsWith('/users/me'))return {ok:true,json:async()=>({data:{id:'account-one'}})};
   if(url.includes('/devices?'))return {ok:true,json:async()=>({data:[{type:'devices',id:'camera-one',attributes:{name:'Farber'},relationships:{status:{data:{type:'device-status',id:'status-one'}}}}],included:[{type:'device-status',id:'status-one',attributes:{online:true}}]})};
-  if(url.endsWith('/sessions'))return {ok:true,headers:new Headers({location:'https://api.amazonvision.com/v1/devices/camera-one/media/streaming/whep/sessions/session-one'}),text:async()=> 'v=0\r\nanswer'};
+  if(url.endsWith('/sessions'))return {ok:true,headers:new Headers({location:'https://stream.example.test/v1/devices/camera-one/media/streaming/whep/sessions/session-one?routing=example'}),text:async()=> 'v=0\r\nanswer'};
   return {ok:true,json:async()=>({})};
  };
  const ring=client(env,fetcher);assert.deepEqual(await ring.devices(),{linked:false,devices:[]});await ring.receiveCode('code');assert([...db.values()].every(v=>!v.includes('access-secret')&&!v.includes('refresh-secret')));
  await assert.rejects(ring.link('forged',Date.now()),/could not be verified/);assert(!db.has('farber:ring:v1:active'));
  const now=Date.now(),nonce=crypto.createHmac('sha256','hmac').update(`${now}:account-one`).digest('base64url');assert.deepEqual(await ring.link(nonce,now),{linked:true});await assert.rejects(ring.link(nonce,now),/could not be verified/);
  const result=await ring.devices();assert.equal(result.devices[0].online,true);assert(refreshes>0);assert(!JSON.stringify(result).includes('secret'));
- const stream=await ring.stream('camera-one','v=0\r\noffer');assert.equal(stream.session,'session-one');await ring.stop('camera-one',stream.session);assert(calls.some(c=>c.opt.method==='DELETE'));await assert.rejects(ring.stop('camera-one','../escape'),/Invalid stream session/);
+ const stream=await ring.stream('camera-one','v=0\r\noffer');assert.equal(stream.session,'session-one');await ring.stop('camera-one',stream.session);assert(calls.some(c=>c.opt.method==='DELETE'&&c.url==='https://api.amazonvision.com/v1/devices/camera-one/media/streaming/whep/sessions/session-one'));assert(!calls.some(c=>c.url.includes('stream.example.test')||c.url.includes('routing=')));await assert.rejects(ring.stop('camera-one','../escape'),/Invalid stream session/);
  const integration=calls.filter(c=>c.url.endsWith('/app-integrations'));assert.deepEqual(integration.map(c=>c.opt.method),['POST','PATCH']);
  await assert.rejects(ring.webhook(Buffer.from('{}'),'sha256=wrong'),/Invalid signature/);
 });
@@ -30,9 +30,11 @@ test('Ring WHEP session URLs normalize opaque device IDs and relative references
  const base='/v1/devices/'+device+'/media/streaming/whep/sessions/';
  assert.equal(streamSession('https://api.amazonvision.com'+base+'session:one=',device),'session:one=');
  assert.equal(streamSession(base+'session-one',device),'session-one');
+ assert.equal(streamSession('https://stream.example.test'+base+'session-one?routing=x',device),'session-one');
+ assert.equal(streamSession('http://stream.example.test'+base+'session-one',device),'session-one');
  assert.equal(streamSession('sessions/session-one',device),'session-one');
  assert.equal(streamSession('/v1/devices/'+encodeURIComponent(device)+'/media/streaming/whep/sessions/session-one',device),'session-one');
- for(const url of [null,'','https://evil.example'+base+'session-one',base+'../escape',base+'%2fescape',base+'%252fescape',base+'session?token=x',base+'session#x',base.replace(device,'other')+'session',base+'%zz']){
+ for(const url of [null,'','ftp://example.test'+base+'session-one',base+'../escape',base+'%2fescape',base+'%252fescape',base.replace(device,'other')+'session',base+'%zz']){
   assert.throws(()=>streamSession(url,device),/RING_/);
  }
 });
