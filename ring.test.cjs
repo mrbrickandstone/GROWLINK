@@ -24,3 +24,15 @@ test('Ring links only verified pending accounts, encrypts tokens, refreshes and 
  const integration=calls.filter(c=>c.url.endsWith('/app-integrations'));assert.deepEqual(integration.map(c=>c.opt.method),['POST','PATCH']);
  await assert.rejects(ring.webhook(Buffer.from('{}'),'sha256=wrong'),/Invalid signature/);
 });
+
+test('Ring WHEP session URLs normalize opaque device IDs and relative references',()=>{
+ const {streamSession}=require('./lib/ring.cjs'),device='ava1:ring.device.a+b=';
+ const base='/v1/devices/'+device+'/media/streaming/whep/sessions/';
+ assert.equal(streamSession('https://api.amazonvision.com'+base+'session:one=',device),'session:one=');
+ assert.equal(streamSession(base+'session-one',device),'session-one');
+ assert.equal(streamSession('sessions/session-one',device),'session-one');
+ assert.equal(streamSession('/v1/devices/'+encodeURIComponent(device)+'/media/streaming/whep/sessions/session-one',device),'session-one');
+ for(const url of [null,'','https://evil.example'+base+'session-one',base+'../escape',base+'%2fescape',base+'%252fescape',base+'session?token=x',base+'session#x',base.replace(device,'other')+'session',base+'%zz']){
+  assert.throws(()=>streamSession(url,device),/RING_/);
+ }
+});
