@@ -1,0 +1,287 @@
+{
+  "at": "2026-10-13T18:52:07.673Z",
+  "cameraLabel": "1",
+  "ownerReportedModel": "Indoor Cam 2K",
+  "officialApiOnly": true,
+  "liveViewInitiated": false,
+  "quietPeriodExports": "PASS_FOR_TESTED_SAMPLES",
+  "plannedOverlapTarget": "PASS_598000_OF_598000_MS",
+  "tokenRefresh": "PASS",
+  "cleanWorkerRestart": "PASS",
+  "workerCrashRecovery": "PASS",
+  "fullRecordingSourceQualification": "NOT_PASSED",
+  "primaryArchiveApproved": false,
+  "ocmComplianceClaim": false,
+  "totalFiles": 8,
+  "totalBytes": 270672986,
+  "combinedReviewWindow": {
+    "start": "2026-10-13T18:08:00.000Z",
+    "end": "2026-10-13T18:31:59.000Z",
+    "basis": "Post-test union of all measured samples; not a new predeclared acceptance plan."
+  },
+  "combinedCoverage": {
+    "intervals": [
+      {
+        "start": 1791914880033,
+        "end": 1791916319000
+      }
+    ],
+    "gaps": [
+      {
+        "start": 1791914880000,
+        "end": 1791914880033
+      }
+    ],
+    "coveredMs": 1438967,
+    "requestedMs": 1439000
+  },
+  "boundaries": [
+    {
+      "precedingJobId": "d24adc7894288830808fd3fdc00c0e9e47220eee42df70c77a756bb81514ca22",
+      "followingJobId": "49ae85e8d65882aa8c68c4bba703a8e7aa24530bd4a330563a215dd5b724d823",
+      "overlapMs": 93
+    },
+    {
+      "precedingJobId": "49ae85e8d65882aa8c68c4bba703a8e7aa24530bd4a330563a215dd5b724d823",
+      "followingJobId": "5a9cf63ea08d3235344d8eecdad7bc68738368f35f10ddd7be24a0edd3080ef1",
+      "overlapMs": 93
+    },
+    {
+      "precedingJobId": "5a9cf63ea08d3235344d8eecdad7bc68738368f35f10ddd7be24a0edd3080ef1",
+      "followingJobId": "0683aa41d4c5b366c66d18db1aa6fab5cd74e8a9fb71c1c9880fc2497f890ae2",
+      "overlapMs": 206
+    },
+    {
+      "precedingJobId": "0683aa41d4c5b366c66d18db1aa6fab5cd74e8a9fb71c1c9880fc2497f890ae2",
+      "followingJobId": "f01b2342691a2457782c3a12c97497c7426f14b42e911d9c68c55fe4188a45d4",
+      "overlapMs": 208
+    },
+    {
+      "precedingJobId": "f01b2342691a2457782c3a12c97497c7426f14b42e911d9c68c55fe4188a45d4",
+      "followingJobId": "2c8a3fd993fa047953940882162719a0800e029f99ca8510719905d758b22699",
+      "overlapMs": 96
+    },
+    {
+      "precedingJobId": "2c8a3fd993fa047953940882162719a0800e029f99ca8510719905d758b22699",
+      "followingJobId": "8550f2922503e814e3b9e043001cfdd444c62d390eb4df54d2a26bbf68c805d8",
+      "overlapMs": 93
+    },
+    {
+      "precedingJobId": "8550f2922503e814e3b9e043001cfdd444c62d390eb4df54d2a26bbf68c805d8",
+      "followingJobId": "67a3cd77a0998d9ad7e1a9dee3951f9f973037a67ca0690d2663f431c7667b3c",
+      "overlapMs": 1203
+    }
+  ],
+  "samples": [
+    {
+      "run": "media-smoke",
+      "jobId": "d24adc7894288830808fd3fdc00c0e9e47220eee42df70c77a756bb81514ca22",
+      "requestedStart": "2026-10-13T18:08:00.000Z",
+      "requestedEnd": "2026-10-13T18:09:00.000Z",
+      "actualStart": "2026-10-13T18:08:00.033Z",
+      "actualEnd": "2026-10-13T18:09:00.150Z",
+      "durationSeconds": 60.117,
+      "frames": 901,
+      "width": 2560,
+      "height": 1440,
+      "fps": 15,
+      "maxFrameGapSeconds": 0.0810000000000013,
+      "decoded": true,
+      "frameTimelineValid": true,
+      "bytes": 11309551,
+      "sha256": "9f783af1c95055b896f3dc9886bdcd7c7f86740ca0cbe434a5244d1b75a8be2b",
+      "readbackVerifiedAt": "2026-10-13T18:52:07.477Z",
+      "attempts": 2,
+      "state": "partial",
+      "initialHttpStatus": 303,
+      "httpStatus": 200
+    },
+    {
+      "run": "media-smoke",
+      "jobId": "49ae85e8d65882aa8c68c4bba703a8e7aa24530bd4a330563a215dd5b724d823",
+      "requestedStart": "2026-10-13T18:09:00.000Z",
+      "requestedEnd": "2026-10-13T18:10:00.000Z",
+      "actualStart": "2026-10-13T18:09:00.057Z",
+      "actualEnd": "2026-10-13T18:10:00.108Z",
+      "durationSeconds": 60.051,
+      "frames": 900,
+      "width": 2560,
+      "height": 1440,
+      "fps": 14.985014985014985,
+      "maxFrameGapSeconds": 0.08100000000000307,
+      "decoded": true,
+      "frameTimelineValid": true,
+      "bytes": 11269492,
+      "sha256": "67a7f8d1ee733b1b75daa37ebffc150ebfdb498fc86cc34bb395db7c7808af99",
+      "readbackVerifiedAt": "2026-10-13T18:52:07.486Z",
+      "attempts": 1,
+      "state": "partial",
+      "initialHttpStatus": 303,
+      "httpStatus": 200
+    },
+    {
+      "run": "media-five-minute",
+      "jobId": "5a9cf63ea08d3235344d8eecdad7bc68738368f35f10ddd7be24a0edd3080ef1",
+      "requestedStart": "2026-10-13T18:10:00.000Z",
+      "requestedEnd": "2026-10-13T18:15:00.000Z",
+      "actualStart": "2026-10-13T18:10:00.015Z",
+      "actualEnd": "2026-10-13T18:15:00.212Z",
+      "durationSeconds": 300.197,
+      "frames": 4498,
+      "width": 2560,
+      "height": 1440,
+      "fps": 15,
+      "maxFrameGapSeconds": 0.1150000000000091,
+      "decoded": true,
+      "frameTimelineValid": true,
+      "bytes": 57010544,
+      "sha256": "0487501d08778b7c32a8e4aa7acba92c03f2eae37381a998ae4247bd049635bb",
+      "readbackVerifiedAt": "2026-10-13T18:52:07.530Z",
+      "attempts": 1,
+      "state": "partial",
+      "initialHttpStatus": 303,
+      "httpStatus": 200
+    },
+    {
+      "run": "media-five-minute",
+      "jobId": "0683aa41d4c5b366c66d18db1aa6fab5cd74e8a9fb71c1c9880fc2497f890ae2",
+      "requestedStart": "2026-10-13T18:15:00.000Z",
+      "requestedEnd": "2026-10-13T18:20:00.000Z",
+      "actualStart": "2026-10-13T18:15:00.006Z",
+      "actualEnd": "2026-10-13T18:20:00.270Z",
+      "durationSeconds": 300.264,
+      "frames": 4500,
+      "width": 2560,
+      "height": 1440,
+      "fps": 15,
+      "maxFrameGapSeconds": 0.08200000000000074,
+      "decoded": true,
+      "frameTimelineValid": true,
+      "bytes": 56480912,
+      "sha256": "1724244c529934ed38ecf488ca3d2416eab59861b21d54fdee74048de5e7077a",
+      "readbackVerifiedAt": "2026-10-13T18:52:07.572Z",
+      "attempts": 1,
+      "state": "partial",
+      "initialHttpStatus": 303,
+      "httpStatus": 200
+    },
+    {
+      "run": "media-crash",
+      "jobId": "f01b2342691a2457782c3a12c97497c7426f14b42e911d9c68c55fe4188a45d4",
+      "requestedStart": "2026-10-13T18:20:00.000Z",
+      "requestedEnd": "2026-10-13T18:21:00.000Z",
+      "actualStart": "2026-10-13T18:20:00.062Z",
+      "actualEnd": "2026-10-13T18:21:00.116Z",
+      "durationSeconds": 60.054,
+      "frames": 900,
+      "width": 2560,
+      "height": 1440,
+      "fps": 15,
+      "maxFrameGapSeconds": 0.08100000000000307,
+      "decoded": true,
+      "frameTimelineValid": true,
+      "bytes": 11186501,
+      "sha256": "5ddd6f54fe1af5f80417355c28cf3fcae535e53b5e47d31c01ac1898893a38bd",
+      "readbackVerifiedAt": "2026-10-13T18:52:07.581Z",
+      "attempts": 2,
+      "state": "partial",
+      "initialHttpStatus": 303,
+      "httpStatus": 200
+    },
+    {
+      "run": "media-crash",
+      "jobId": "2c8a3fd993fa047953940882162719a0800e029f99ca8510719905d758b22699",
+      "requestedStart": "2026-10-13T18:21:00.000Z",
+      "requestedEnd": "2026-10-13T18:22:00.000Z",
+      "actualStart": "2026-10-13T18:21:00.020Z",
+      "actualEnd": "2026-10-13T18:22:00.139Z",
+      "durationSeconds": 60.119,
+      "frames": 901,
+      "width": 2560,
+      "height": 1440,
+      "fps": 15,
+      "maxFrameGapSeconds": 0.08099999999999596,
+      "decoded": true,
+      "frameTimelineValid": true,
+      "bytes": 11139531,
+      "sha256": "59d64590f9c113481b7bee1c9f57f6f9707244fd9c540cd965cad15270263867",
+      "readbackVerifiedAt": "2026-10-13T18:52:07.589Z",
+      "attempts": 1,
+      "state": "partial",
+      "initialHttpStatus": 303,
+      "httpStatus": 200
+    },
+    {
+      "run": "media-overlap",
+      "jobId": "8550f2922503e814e3b9e043001cfdd444c62d390eb4df54d2a26bbf68c805d8",
+      "requestedStart": "2026-10-13T18:22:00.000Z",
+      "requestedEnd": "2026-10-13T18:27:00.000Z",
+      "actualStart": "2026-10-13T18:22:00.046Z",
+      "actualEnd": "2026-10-13T18:27:00.238Z",
+      "durationSeconds": 300.192,
+      "frames": 4499,
+      "width": 2560,
+      "height": 1440,
+      "fps": 15,
+      "maxFrameGapSeconds": 0.08100000000001728,
+      "decoded": true,
+      "frameTimelineValid": true,
+      "bytes": 55963630,
+      "sha256": "2d2fe8ab152334124ce85ff2cd1db4bda8d05d6bf1b21d1f07c7d49f5965a8fa",
+      "readbackVerifiedAt": "2026-10-13T18:52:07.630Z",
+      "attempts": 1,
+      "state": "partial",
+      "initialHttpStatus": 303,
+      "httpStatus": 200
+    },
+    {
+      "run": "media-overlap",
+      "jobId": "67a3cd77a0998d9ad7e1a9dee3951f9f973037a67ca0690d2663f431c7667b3c",
+      "requestedStart": "2026-10-13T18:26:59.000Z",
+      "requestedEnd": "2026-10-13T18:31:59.000Z",
+      "actualStart": "2026-10-13T18:26:59.035Z",
+      "actualEnd": "2026-10-13T18:31:59.232Z",
+      "durationSeconds": 300.197,
+      "frames": 4499,
+      "width": 2560,
+      "height": 1440,
+      "fps": 15,
+      "maxFrameGapSeconds": 0.08200000000002206,
+      "decoded": true,
+      "frameTimelineValid": true,
+      "bytes": 56312825,
+      "sha256": "a0073973d8da6985293ac89c8c6a529c4f431b2087a4b9e4fa24e43d2359d476",
+      "readbackVerifiedAt": "2026-10-13T18:52:07.671Z",
+      "attempts": 1,
+      "state": "partial",
+      "initialHttpStatus": 303,
+      "httpStatus": 200
+    }
+  ],
+  "rawEvidence": [
+    {
+      "path": ".pilot/media-smoke/report.json",
+      "sha256": "76af087afad20ef3e8aff575e06c382d70e5ded5099ef686a440dbdab0a147b0"
+    },
+    {
+      "path": ".pilot/media-five-minute/report.json",
+      "sha256": "93b143e7196a14d97d49e34d1844ca8a571d967a08a2a33c022ce0e222989a2f"
+    },
+    {
+      "path": ".pilot/media-crash/report.json",
+      "sha256": "04104ee39ce68934d2004554a5473dd36bb5f07a23405055f1782a6c7ac70a52"
+    },
+    {
+      "path": ".pilot/media-overlap/report.json",
+      "sha256": "f2a84c353db09982baf33fede790b1b26f127d057011a95ace30a9a65901c34f"
+    }
+  ],
+  "unresolved": [
+    "Embedded synchronized capture clock",
+    "Camera-native authenticated evidence and verifier",
+    "Vendor policy for continuous export, regulated retention/holds, withdrawal/deletion and inspector grants",
+    "Extended day/night, power and failure commissioning",
+    "Provisioned independent archive, named identities and alert-delivery endpoints"
+  ],
+  "recommendation": "Continue Ring as preferred archive candidate because quiet exports and planned-overlap sample coverage succeeded; retain common commercial-recorder interfaces until remaining qualification gates resolve."
+}

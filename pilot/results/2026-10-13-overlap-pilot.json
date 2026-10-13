@@ -1,0 +1,72 @@
+{
+  "at": "2026-10-13T18:40:17.951Z",
+  "cameraLabel": "1",
+  "technicalCoverage": "MEASURED_CONTIGUOUS",
+  "primaryArchiveApproved": false,
+  "target": {
+    "start": "2026-10-13T18:22:01.000Z",
+    "end": "2026-10-13T18:31:59.000Z"
+  },
+  "plannedLookbackSeconds": 1,
+  "segmentSeconds": 299,
+  "quiet": {
+    "verified": true,
+    "reason": "NO_EVENTS_IN_COMPLETE_HISTORY",
+    "pages": 30,
+    "overlaps": [],
+    "oldestEvent": 1791717786216
+  },
+  "coverage": {
+    "intervals": [
+      {
+        "start": 1791915721000,
+        "end": 1791916319000
+      }
+    ],
+    "gaps": [],
+    "coveredMs": 598000,
+    "requestedMs": 598000
+  },
+  "samples": [
+    {
+      "requestedStart": "2026-10-13T18:22:00.000Z",
+      "requestedEnd": "2026-10-13T18:27:00.000Z",
+      "actualStart": "2026-10-13T18:22:00.046Z",
+      "actualEnd": "2026-10-13T18:27:00.238Z",
+      "durationSeconds": 300.192,
+      "frames": 4499,
+      "width": 2560,
+      "height": 1440,
+      "fps": 15,
+      "decoded": true,
+      "frameTimelineValid": true,
+      "bytes": 55963630,
+      "sha256": "2d2fe8ab152334124ce85ff2cd1db4bda8d05d6bf1b21d1f07c7d49f5965a8fa",
+      "httpStatus": 200,
+      "initialHttpStatus": 303
+    },
+    {
+      "requestedStart": "2026-10-13T18:26:59.000Z",
+      "requestedEnd": "2026-10-13T18:31:59.000Z",
+      "actualStart": "2026-10-13T18:26:59.035Z",
+      "actualEnd": "2026-10-13T18:31:59.232Z",
+      "durationSeconds": 300.197,
+      "frames": 4499,
+      "width": 2560,
+      "height": 1440,
+      "fps": 15,
+      "decoded": true,
+      "frameTimelineValid": true,
+      "bytes": 56312825,
+      "sha256": "a0073973d8da6985293ac89c8c6a529c4f431b2087a4b9e4fa24e43d2359d476",
+      "httpStatus": 200,
+      "initialHttpStatus": 303
+    }
+  ],
+  "boundaryOverlapMs": 1203,
+  "rawEvidence": {
+    "path": ".pilot/media-overlap/report.json",
+    "sha256": "f2a84c353db09982baf33fede790b1b26f127d057011a95ace30a9a65901c34f"
+  },
+  "note": "New planned requests with a one-second lookback. Earlier requests and retries were not shifted. Full target coverage measured, separate from vendor/legal/source-qualification gates."
+}

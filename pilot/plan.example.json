@@ -1,0 +1,16 @@
+{
+  "cameraId": "REPLACE_FROM_OFFICIAL_INVENTORY",
+  "componentId": null,
+  "start": "2026-10-12T06:00:00Z",
+  "end": "2026-10-12T06:30:00Z",
+  "segmentSeconds": 600,
+  "attestations": {
+    "eligibleModelVerified": false,
+    "continuousPowerVerified": false,
+    "subscriptionVerified": false,
+    "recording247EnabledVerified": false,
+    "recordingModesVerified": false,
+    "reviewedBy": "",
+    "evidenceReference": ""
+  }
+}

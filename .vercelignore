@@ -1,0 +1,10 @@
+# Keep local evidence, scripts and internal evaluation records off static hosting.
+.pilot/
+.env*
+**/*.sqlite
+**/*.sqlite-shm
+**/*.sqlite-wal
+pilot/
+docs/security/
+scripts/
+test/

@@ -1,0 +1,59 @@
+{
+  "at": "2026-10-13T18:54:56.296Z",
+  "aliases": [
+    {
+      "alias": "farber-growlink-dashboard.vercel.app",
+      "deployment": "dpl_4DaYwKEpAvG6rG6vqbugBGsXL4KH",
+      "matchesOriginal": true
+    },
+    {
+      "alias": "farber-growlink-dashboard-marcos-projects-83f88565.vercel.app",
+      "deployment": "dpl_4DaYwKEpAvG6rG6vqbugBGsXL4KH",
+      "matchesOriginal": true
+    },
+    {
+      "alias": "farber-growlink-dashboard-git-main-marcos-projects-83f88565.vercel.app",
+      "deployment": "dpl_4DaYwKEpAvG6rG6vqbugBGsXL4KH",
+      "matchesOriginal": true
+    }
+  ],
+  "ringScopes": [
+    {
+      "key": "RING_CLIENT_ID",
+      "target": [
+        "production"
+      ],
+      "gitBranch": null
+    },
+    {
+      "key": "RING_CLIENT_SECRET",
+      "target": [
+        "production"
+      ],
+      "gitBranch": null
+    },
+    {
+      "key": "RING_HMAC_KEY",
+      "target": [
+        "production"
+      ],
+      "gitBranch": null
+    }
+  ],
+  "retired": [
+    {
+      "id": "dpl_G3S1i1te4X8DkQh3UmYornb1d5ZM",
+      "httpStatus": 404
+    },
+    {
+      "id": "dpl_2L1brCK9DzrQ6ZRa1XXRfQeiPjY1",
+      "httpStatus": 404
+    },
+    {
+      "id": "dpl_48knSyGbzsdjmWHEbr2HVHFjJ2eu",
+      "httpStatus": 404
+    }
+  ],
+  "cleanup": "Completed temporary pilot deployments removed by exact ID using Vercel remove --safe. Original production deployment retained.",
+  "secretsPrinted": false
+}

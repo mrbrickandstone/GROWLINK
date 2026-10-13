@@ -27,3 +27,18 @@ Run `npm test` with Node.js 22 or newer. The recovered package has no third-part
 ## Next work
 
 The monitoring branch adds a read-only monitor with persistent incident state, bounded snapshots, and email delivery. See [MONITOR_SETUP.md](MONITOR_SETUP.md) for activation requirements. It is disabled by default and not deployed. Camera access will follow after Growlink monitoring is working.
+
+## Security archive pilot (development only)
+
+The isolated security work starts with the official Ring historical-export pilot.
+See [findings](docs/security/PILOT_REPORT.md), [runbook](docs/security/RUNBOOK.md),
+and [proposed architecture](docs/security/ARCHITECTURE.md). Both supplied PDFs are
+reviewed in the [brief reconciliation](docs/security/BRIEF_RECONCILIATION.md).
+Run `npm run pilot -- preflight` before attempting inventory or exports.
+Live official inventory and token refresh succeeded through an expiring metadata bridge.
+The owner reports upgrading the plan and enabling 24/7 for camera “1”; only later quiet periods are eligible for the pilot.
+Quiet historical exports and exact target coverage with planned overlap have now been
+demonstrated on eight files, along with token refresh, a clean restart and actual
+interrupted-transfer recovery after lease expiry. See the
+[final evidence register](pilot/results/2026-10-13-pilot-final.json).
+No primary archive source or compliance claim has been approved. The agent made no purchase or camera-setting change.

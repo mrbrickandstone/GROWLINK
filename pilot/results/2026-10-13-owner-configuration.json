@@ -1,0 +1,25 @@
+{
+  "recordedAt": "2026-10-13T18:00:10.534Z",
+  "cameraName": "1",
+  "model": "Indoor Cam 2K",
+  "evidenceType": "OWNER_REPORTED",
+  "recordingMode": "Motion-Based Recording",
+  "ownerResponses": [
+    "Motion-Based Recording",
+    "MOTION RIGHT NOW",
+    "Ring asks me to buy an add-on"
+  ],
+  "configurationGate": "FAIL_CURRENT_MODE",
+  "executionState": "BLOCKED_PAID_24_7_ADD_ON_REQUIRED",
+  "historicalApiCapability": "NOT_TESTED",
+  "qualification": "NOT_PASSED",
+  "subscriptionBasePlan": "UNKNOWN",
+  "continuousPower": "UNVERIFIED",
+  "modeSchedule": "UNVERIFIED",
+  "historicalMediaRequests": 0,
+  "footageRetrieved": 0,
+  "liveViewRequests": 0,
+  "purchases": 0,
+  "recordingSettingChanges": 0,
+  "explanation": "Failure of the current configuration prerequisite does not demonstrate failure of the official historical export API. A later quiet recording window is needed after authorized 24/7 activation."
+}

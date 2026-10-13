@@ -1,0 +1,198 @@
+{
+  "at": "2026-10-13T17:29:16.710Z",
+  "qualification": "NOT_PASSED",
+  "stage": "BLOCKED_PENDING_RECORDING_CONFIGURATION_EVIDENCE",
+  "source": "OFFICIAL_RING_API",
+  "cameraCount": 3,
+  "cameraNames": [
+    "1",
+    "2",
+    "3"
+  ],
+  "selectedCamera": "1",
+  "permissionScope": "ava.v1:read",
+  "linkedAt": "2026-10-11T11:19:58.812Z",
+  "observedCapabilities": {
+    "codec": "AVC",
+    "maxResolution": 1440,
+    "aspectRatio": "16:9"
+  },
+  "observedConfiguration": {
+    "motionDetection": "on",
+    "e2eEncryption": false,
+    "irLedNightVision": "off"
+  },
+  "unverified": [
+    "model",
+    "continuous power",
+    "24/7 subscription/add-on",
+    "24/7 enabled",
+    "mode schedule",
+    "historical download permission"
+  ],
+  "liveTokenRefresh": "PASS",
+  "postRefreshNewLocalProcessInventory": "PASS",
+  "exportWorkerRestart": "NOT_TESTED_ON_RING",
+  "historicalMediaRequests": 0,
+  "footageRetrieved": 0,
+  "liveViewRequests": 0,
+  "quietHistory": {
+    "pages": 30,
+    "eventCount": 95,
+    "paginationComplete": true,
+    "emptyPages": 28,
+    "candidateWindow": {
+      "start": "2026-10-12T22:00:00Z",
+      "end": "2026-10-12T22:30:00Z"
+    },
+    "recordingCoverage": "NOT_DEMONSTRATED"
+  },
+  "productionDeployment": "dpl_4DaYwKEpAvG6rG6vqbugBGsXL4KH",
+  "pilotDeployment": "dpl_48knSyGbzsdjmWHEbr2HVHFjJ2eu",
+  "pilotExpiresAt": "2026-10-13T21:25:11.956Z",
+  "aliasIncident": "Main URL unchanged; secondary team URL was reassigned by Vercel despite --skip-domain and restored to original deployment.",
+  "privateEvidence": [
+    {
+      "file": ".pilot/bridge/connection.private.json",
+      "sha256": "f0ef4b6265e19b9c491ffc2c938b7f1e656dfb2c221a02841013e5e37c97886c"
+    },
+    {
+      "file": ".pilot/bridge/inventory.private.json",
+      "sha256": "6302b7d081a9d787397e9ccb6870701d5dd04641e0f7c3a6b003a2275919e807"
+    },
+    {
+      "file": ".pilot/bridge/configurations.private.json",
+      "sha256": "a672b84fd81963359e3892fdf5ffa6eb293d3cf9ccbd05dd896606231009a8d4"
+    },
+    {
+      "file": ".pilot/bridge/history-page-25.private.json",
+      "sha256": "41d994974ca453230805d7d3a8582ebc3e32f0048794ea6306facb7b49468fd4",
+      "originalMutablePath": ".pilot/bridge/history.private.json",
+      "note": "The original history response path was overwritten as pagination continued; this saved page retains the exact bytes hashed at the checkpoint."
+    },
+    {
+      "file": ".pilot/bridge/refresh.private.json",
+      "sha256": "270959245f3ee05c751e42a5503f42fa755b32267b37174dd3cb09aa0e74f74c"
+    },
+    {
+      "file": ".pilot/bridge/history-page-0.private.json",
+      "sha256": "75f32951d0bf8f87cac7ac9e482ca882a9f6b59ff14f993938cbd7e80482b64f"
+    },
+    {
+      "file": ".pilot/bridge/history-page-1.private.json",
+      "sha256": "e54036b62519a21b78dc3f945371150a344e91cc22ddd8e7451950c90d5a37e8"
+    },
+    {
+      "file": ".pilot/bridge/history-page-10.private.json",
+      "sha256": "17850669a01c13973765ff4719a5b25b96187c16ff41bf7853d78559a40598cc"
+    },
+    {
+      "file": ".pilot/bridge/history-page-11.private.json",
+      "sha256": "2043b1d2cbe0bba26ea8b44b2939456bb60ca7f98f6be121c3176485fa2ad9ec"
+    },
+    {
+      "file": ".pilot/bridge/history-page-12.private.json",
+      "sha256": "1bfe1fa6278385ee32e6ab53b82055eaaf6d1627b9853496076b95e8604f8b47"
+    },
+    {
+      "file": ".pilot/bridge/history-page-13.private.json",
+      "sha256": "2bd8dc5133ed3068da9ba52aeb91ca10577dd9473525af3d88725043f7c3008c"
+    },
+    {
+      "file": ".pilot/bridge/history-page-14.private.json",
+      "sha256": "cb50949614217123567e512cdb4175545dd4479f31758f63fe60c20b53f9a530"
+    },
+    {
+      "file": ".pilot/bridge/history-page-15.private.json",
+      "sha256": "7757891ebb720e5095854155e7ae700a3942d12c7a7e81da61b196dd03e6884c"
+    },
+    {
+      "file": ".pilot/bridge/history-page-16.private.json",
+      "sha256": "031e0b73f2176685394fa867e8f2903fe43693bc6eabb04e30bdd37c3dd02d63"
+    },
+    {
+      "file": ".pilot/bridge/history-page-17.private.json",
+      "sha256": "ff697bb45cc8ce9e711dcf52187361af26037a26bffd60d95927a6264bd0cd0e"
+    },
+    {
+      "file": ".pilot/bridge/history-page-18.private.json",
+      "sha256": "8e736341bf386b740afd77b35821161567b9d941a9bd43a44cde24778ccded87"
+    },
+    {
+      "file": ".pilot/bridge/history-page-19.private.json",
+      "sha256": "de600a4ac742ad85a693dd55f05aa622d013de46b2a8bf39cf110438886f1a8f"
+    },
+    {
+      "file": ".pilot/bridge/history-page-2.private.json",
+      "sha256": "863f3c7078dbaafa8e8df5e12f15c5ecfd5a8a7454814cafdc1471e42eaf70e3"
+    },
+    {
+      "file": ".pilot/bridge/history-page-20.private.json",
+      "sha256": "fbc9762fc92c5f83a2fab6be48771cf1d2b005ce5628f963ea1a6ef8393a4105"
+    },
+    {
+      "file": ".pilot/bridge/history-page-21.private.json",
+      "sha256": "6c7454f35be4ace8cb0dbd7882a94660d7f35e5a158a6726eb0e5310118dc34b"
+    },
+    {
+      "file": ".pilot/bridge/history-page-22.private.json",
+      "sha256": "f0f4d58ef97fdeeefe50894809838f952eeaa2e3c90eb97f1d71bcc74c634f4f"
+    },
+    {
+      "file": ".pilot/bridge/history-page-23.private.json",
+      "sha256": "a5a54bae205f67379838cdd6997425f4adc7ea74e8163b5dce02c4dfa6905839"
+    },
+    {
+      "file": ".pilot/bridge/history-page-24.private.json",
+      "sha256": "bd5a8e447831753a6dc59402105dec60400f94c9e31d69b56c75bfaab77fd76c"
+    },
+    {
+      "file": ".pilot/bridge/history-page-25.private.json",
+      "sha256": "41d994974ca453230805d7d3a8582ebc3e32f0048794ea6306facb7b49468fd4"
+    },
+    {
+      "file": ".pilot/bridge/history-page-26.private.json",
+      "sha256": "323e7056ae1ad4b7320a778384f9c5fbf3b142ebd8fd4fa9045fcbf5063c11a4"
+    },
+    {
+      "file": ".pilot/bridge/history-page-27.private.json",
+      "sha256": "0787168fd08821b364fb06d3ae308c73dd0cb3e57a76bfaf57b546e893ddc9a6"
+    },
+    {
+      "file": ".pilot/bridge/history-page-28.private.json",
+      "sha256": "f591f2128fb13cca29228197b7f9cf3b2b2aa4c996422e2f3aacf8af1594480a"
+    },
+    {
+      "file": ".pilot/bridge/history-page-29.private.json",
+      "sha256": "f776c82c529cfda16917f6ce36d8fc6f5c31a76b713e6e3841ed60a2ec0b38f6"
+    },
+    {
+      "file": ".pilot/bridge/history-page-3.private.json",
+      "sha256": "2c6052bbb6c25af08c735cc4b593c7a557aae12ae6283cf054e00491fc339c45"
+    },
+    {
+      "file": ".pilot/bridge/history-page-4.private.json",
+      "sha256": "8304deb29d9cc87cffcb6ea1383d9a6d259a9e3adde0239a4535a7d02cc10773"
+    },
+    {
+      "file": ".pilot/bridge/history-page-5.private.json",
+      "sha256": "83989eb3497cb92728a3ee40ac5be44c49f838fc6d07b1e84b393ebb677c3ff5"
+    },
+    {
+      "file": ".pilot/bridge/history-page-6.private.json",
+      "sha256": "b21516be925f31c6085270d2e721c0218bed8854f28acfe963ed54f58635458c"
+    },
+    {
+      "file": ".pilot/bridge/history-page-7.private.json",
+      "sha256": "8a534e06d3d2dad7b43b87eea41b7c59a338349c1478952d0d90ec2e4b9b09bf"
+    },
+    {
+      "file": ".pilot/bridge/history-page-8.private.json",
+      "sha256": "20334e030c881a8dc2c44d4161bd1249301634f8bbe3a0a891cc8743dd3305e3"
+    },
+    {
+      "file": ".pilot/bridge/history-page-9.private.json",
+      "sha256": "c214e17aa26e0ff51047c09094de21aca94506e5a2edfc344f122a700d0b009e"
+    }
+  ]
+}

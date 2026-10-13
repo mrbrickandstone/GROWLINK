@@ -1,0 +1,52 @@
+{
+  "at": "2026-10-13T18:19:33.159Z",
+  "preview": {
+    "id": "dpl_2L1brCK9DzrQ6ZRa1XXRfQeiPjY1",
+    "url": "https://farber-growlink-dashboard-7fyjtxgji-marcos-projects-83f88565.vercel.app",
+    "state": "READY",
+    "target": null,
+    "expiresAt": 1791929508259
+  },
+  "aliases": [
+    {
+      "alias": "farber-growlink-dashboard.vercel.app",
+      "deployment": "dpl_4DaYwKEpAvG6rG6vqbugBGsXL4KH",
+      "matchesOriginal": true
+    },
+    {
+      "alias": "farber-growlink-dashboard-marcos-projects-83f88565.vercel.app",
+      "deployment": "dpl_4DaYwKEpAvG6rG6vqbugBGsXL4KH",
+      "matchesOriginal": true
+    },
+    {
+      "alias": "farber-growlink-dashboard-git-main-marcos-projects-83f88565.vercel.app",
+      "deployment": "dpl_4DaYwKEpAvG6rG6vqbugBGsXL4KH",
+      "matchesOriginal": true
+    }
+  ],
+  "ringScopes": [
+    {
+      "key": "RING_CLIENT_ID",
+      "target": [
+        "production"
+      ],
+      "gitBranch": null
+    },
+    {
+      "key": "RING_CLIENT_SECRET",
+      "target": [
+        "production"
+      ],
+      "gitBranch": null
+    },
+    {
+      "key": "RING_HMAC_KEY",
+      "target": [
+        "production"
+      ],
+      "gitBranch": null
+    }
+  ],
+  "ownerApproval": "Explicit approval for temporary branch-scoped pilot access in this chat",
+  "secretsPrinted": false
+}
