@@ -8,3 +8,8 @@ pilot/
 docs/security/
 scripts/
 test/
+
+# Separate durable security service; never publish its source as static assets
+security/
+.security/
+.security-watchdog/

@@ -1,0 +1,21 @@
+[Unit]
+Description=Farber independent watchdog (separate host)
+After=network-online.target
+
+[Service]
+User=farber-watchdog
+Group=farber-watchdog
+WorkingDirectory=/opt/farber
+EnvironmentFile=/etc/farber/watchdog.env
+ExecStart=/usr/bin/node /opt/farber/security/watchdog.cjs
+Restart=always
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/farber-watchdog
+
+[Install]
+WantedBy=multi-user.target

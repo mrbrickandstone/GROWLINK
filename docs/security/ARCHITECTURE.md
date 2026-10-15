@@ -1,6 +1,6 @@
 # Recording-source decision and implementation boundary
 
-Status: design proposal reconciled with both supplied briefs; recording source remains unqualified. Interfaces exist in `lib/security/contracts.d.ts`; the systems below are not deployed. See `BRIEF_RECONCILIATION.md` for source precedence, differences, acceptance gates and vendor-policy questions. The owner subsequently reports upgrading the plan and enabling 24/7 on camera “1”. Actual quiet-period historical exports still determine qualification; the earlier motion-only finding remains historical evidence.
+Status: design proposal reconciled with both supplied briefs; recording source remains unqualified. Interfaces exist in `lib/security/contracts.d.ts`. A separate development application and durable worker are now implemented in [`security/`](../../security/README.md); the production services below are not deployed. See `BRIEF_RECONCILIATION.md` for source precedence, differences, acceptance gates and vendor-policy questions. The owner subsequently reports upgrading the plan and enabling 24/7 on camera “1”. The one-camera quiet export, planned-overlap and restart pilot passed its tested samples; full qualification remains open. the earlier motion-only finding remains historical evidence.
 
 ## Source decision
 
@@ -12,7 +12,7 @@ For a recorder pilot, obtain a loan/demo or access to an existing recorder, a na
 
 Also needed: appropriately sized managed PoE switch, cabling, secured recorder room/rack, redundant recording disks, an independent storage destination with object lock/versioning and encryption, worker host with persistent disk, separately hosted watchdog and configured notification recipients, and UPS/generator capacity for the complete security load. Do not assume an ordinary UPS label proves eight hours.
 
-Disk sizing must use measured aggregate bitrate. Decimal TB for 90 continuous days = aggregate Mbit/s × 0.972, before redundancy, filesystem overhead, headroom and investigation holds. As an illustration only, three cameras at 4 Mbit/s each require about 11.664 TB of video, or 14.58 TB with 25% headroom, before RAID overhead. Actual camera count and bitrate remain unknown; do not order storage from this illustration.
+Disk sizing must use measured aggregate bitrate. Decimal TB for 90 continuous days = aggregate Mbit/s × 0.972, before redundancy, filesystem overhead, headroom and investigation holds. As an illustration only, three cameras at 4 Mbit/s each require about 11.664 TB of video, or 14.58 TB with 25% headroom, before RAID overhead. Inventory has three cameras; sustained aggregate bitrate remains unknown; do not order storage from this illustration.
 
 ## Proposed data flow
 
@@ -62,7 +62,7 @@ Power commissioning records need UPS/generator identifiers, complete connected-l
 
 ## Unresolved acceptance items
 
-- Both design briefs are reviewed; licensed areas, room/location map, operations schedule and approved security plan still need site evidence.
+- Both design briefs are reviewed; licensed areas, operations schedule and approved security plan still need site evidence.
 - Confirm exact license applicability, inspection/evidence expectations, permitted footage formats, timestamp requirements and relevant local rules with qualified reviewers.
 - Obtain Ring's explicit 24/7 API export/limits/retention/consent-withdrawal/inspector-access position, or select and validate a commercial recorder.
 - Provision nonproduction identity, durable queue/database, immutable archive and independent monitor; do not point preview services at production write credentials.

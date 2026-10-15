@@ -1,0 +1,21 @@
+[Unit]
+Description=Farber named-access control and playback service
+After=network-online.target
+
+[Service]
+User=farber
+Group=farber
+WorkingDirectory=/opt/farber
+EnvironmentFile=/etc/farber/web.env
+ExecStart=/usr/bin/node /opt/farber/security/server.cjs
+Restart=always
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/farber
+
+[Install]
+WantedBy=multi-user.target

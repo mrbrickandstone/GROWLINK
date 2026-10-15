@@ -1,0 +1,32 @@
+# Key-only reference. Use separate restricted web/worker/watchdog env files.
+SECURITY_DATA_DIR=/var/lib/farber
+SECURITY_HOST=127.0.0.1
+SECURITY_PORT=4318
+SECURITY_ORIGIN=https://security.example.invalid
+SECURITY_OIDC_ISSUER=
+SECURITY_OIDC_CLIENT_ID=
+SECURITY_OIDC_CLIENT_SECRET=
+SECURITY_OIDC_ACR=
+
+# Worker and original-download service: IAM role preferred, never browser credentials.
+SECURITY_S3_BUCKET=
+SECURITY_S3_REGION=us-east-1
+SECURITY_STORAGE_LOCK_APPROVED=false
+SECURITY_ENABLE_PHYSICAL_DELETION=false
+
+# Approved Ring worker only; leave unset until dedicated access is commissioned.
+RING_CLIENT_ID=
+RING_CLIENT_SECRET=
+RING_HMAC_KEY=
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
+
+# Worker sends here; watchdog runs on a separate host behind TLS.
+SECURITY_WATCHDOG_URL=
+SECURITY_WATCHDOG_TOKEN=
+SECURITY_WATCHDOG_DIR=/var/lib/farber-watchdog
+SECURITY_WATCHDOG_HOST=127.0.0.1
+SECURITY_WATCHDOG_PORT=4320
+SECURITY_EXPECTED_COMPONENTS=archive-worker
+SECURITY_ALERT_WEBHOOK=
+SECURITY_ALERT_TOKEN=

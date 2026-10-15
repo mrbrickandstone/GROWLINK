@@ -42,3 +42,16 @@ demonstrated on eight files, along with token refresh, a clean restart and actua
 interrupted-transfer recovery after lease expiry. See the
 [final evidence register](pilot/results/2026-10-13-pilot-final.json).
 No primary archive source or compliance claim has been approved. The agent made no purchase or camera-setting change.
+
+## Farber Security Command Center (isolated development)
+
+The separate [security application](security/README.md) now provides room-grouped
+recorded views, exact gap timelines, durable transfer/evidence jobs, named-role
+authorization, holds/deletion controls, audit and commissioning records, and an
+independent watchdog service. Camera mapping is 1/3 → FLOWERING and 2 → FRONT DOOR.
+Eight real pilot originals are preserved privately; no media or credentials are in Git.
+
+Install its separate dependencies with `npm ci --prefix security --ignore-scripts`,
+then follow its local-review and deployment runbook. Growlink's production application
+and Vercel aliases are not promoted by this work. S3, OIDC, alert receipt and site/source
+qualification remain commissioning gates; this is not an OCM compliance assertion.

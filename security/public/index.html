@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Farber Security · East End Flower Farm</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <aside class="sidebar">
+      <a class="brand" href="/" aria-label="Farber security home"
+        ><svg viewBox="0 0 40 40" aria-hidden="true">
+          <path
+            d="M20 20C-5 18 7-7 20 20M20 20C18-5 47 7 20 20M20 20C45 18 33 47 20 20M20 20C18 45-7 33 20 20"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          /></svg
+        ><span>FARBER<small>SECURITY COMMAND CENTER</small></span></a
+      >
+      <div class="site-label">EAST END FLOWER FARM LTD.</div>
+      <nav aria-label="Main navigation">
+        <button data-view="overview" class="active">
+          ◫ <span>Overview</span></button
+        ><button data-view="playback">▷ <span>Recordings</span></button
+        ><button data-view="evidence">▣ <span>Evidence & holds</span></button
+        ><button data-view="access">♙ <span>Access requests</span></button
+        ><button data-view="records">☷ <span>Inspections & power</span></button
+        ><button data-view="audit">↳ <span>Audit history</span></button>
+      </nav>
+      <div class="sidebar-bottom">
+        <span class="dot"></span> Development environment
+        <p>Recording runs independently of this dashboard.</p>
+        <a
+          href="https://farber-growlink-dashboard.vercel.app"
+          target="_blank"
+          rel="noreferrer"
+          >Open Growlink ↗</a
+        >
+      </div>
+    </aside>
+    <div class="workspace">
+      <header>
+        <div>
+          <span class="eyebrow">FARBER DRIVE / SECURITY</span>
+          <h1 id="pageTitle">Security overview</h1>
+        </div>
+        <div class="header-actions">
+          <span id="clock"></span
+          ><button id="refresh" class="secondary">↻ Refresh</button
+          ><a class="button" id="signIn" href="/auth/login">Sign in</a
+          ><button id="signOut" class="secondary" hidden>Sign out</button>
+        </div>
+      </header>
+      <main>
+        <div id="notice" class="notice" role="status"></div>
+        <div id="error" class="error" role="alert" hidden></div>
+        <div id="content"></div>
+      </main>
+      <footer>
+        <span>East End Flower Farm Ltd. · America/New_York</span
+        ><span>Source qualification pending · No OCM compliance assertion</span>
+      </footer>
+    </div>
+    <script src="/app.js"></script>
+  </body>
+</html>
