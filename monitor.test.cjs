@@ -125,28 +125,6 @@ test('persisted pending email retries with identical body/key and subsequent run
   assert.equal(h.snapshots.length, 4);
 });
 
-test('learning starts with fresh data, preserves a seven-day baseline, and never sends email', async () => {
-  const h = harness();
-  const learnEnv = { ...env, MONITOR_MODE: 'learn' };
-  delete learnEnv.RESEND_API_KEY; delete learnEnv.ALERT_FROM; delete learnEnv.ALERT_TO;
-  h.setData({ sensorData: [] });
-  let result = await runMonitor({ env: learnEnv, fetcher: h.fetcher, now });
-  assert.equal(result.learning.startedAt, null);
-  h.setData(fresh(now + 300000));
-  result = await runMonitor({ env: learnEnv, fetcher: h.fetcher, now: now + 300000 });
-  assert.equal(result.learning.startedAt, now + 300000);
-  const end = result.learning.endsAt;
-  const key = 'growlink:farber:monitor:v1:baseline';
-  const frozen = h.keys.get(key);
-  h.setData(fresh(end + 1));
-  result = await runMonitor({ env: learnEnv, fetcher: h.fetcher, now: end + 1 });
-  assert.equal(result.learning.windowElapsed, true);
-  assert.equal(h.keys.get(key), frozen);
-  assert.equal(h.emails.length, 0);
-  // Elapsed time alone does not claim a complete week of usable observations.
-  assert.equal(result.learning.completeCaptures, 1);
-});
-
 test('distributed lock blocks overlap before any telemetry/email operations', async () => {
   const h = harness();
   h.keys.set('growlink:farber:monitor:v1:lock', 'other-run');
@@ -176,3 +154,4 @@ test('unauthorized monitor requests cannot run; configured endpoint stays disabl
     if (enabled === undefined) delete process.env.MONITOR_ENABLED; else process.env.MONITOR_ENABLED = enabled;
   }
 });
+

@@ -7,4 +7,19 @@
 <section class="panel"><div class="section-head"><div><h2>Climate history</h2><p id="historyStatus">Connect to load recorded data.</p></div><select id="range" aria-label="History range"><option value="1">Last hour</option><option value="24" selected>Last 24 hours</option><option value="72">Last 3 days</option><option value="168">Last 7 days</option></select></div><div id="charts"></div><p class="muted">Shaded periods follow Growlink’s day/night data. Times shown in New York.</p></section>
 <section class="panel" id="ringPanel"><div class="section-head"><h2>Ring cameras</h2><button id="ringRefresh">Refresh cameras</button></div><p id="ringStatus" role="status">Connect your dashboard to load cameras.</p><div id="ringCameras" class="camera-grid"></div><p class="muted">Live views start on demand and stop when you leave this tab. Video only · Up to 10 minutes per session.</p></section>
 <section class="panel"><div class="section-head"><h2>Bellport outside temperature</h2><span class="badge">NWS · Bellport</span></div><p id="weatherStatus">Connect to load outside temperatures and the five-day forecast.</p><div id="weatherCharts"></div><p class="muted">Observed at Shirley / Brookhaven Airport, near Bellport; hourly forecast for Bellport, NY. History follows the selected range; forecast extends five days ahead. All times New York. Conditions at Farber can differ.</p></section><div class="dashboard-grid"><section class="panel"><h2>Root Zone / PIC</h2><div id="rootSummary" class="summary"></div><div class="table-wrap"><table><thead><tr><th>Probe</th><th>Moisture</th><th>Temperature</th><th>EC</th></tr></thead><tbody id="probes"></tbody></table></div></section><section class="panel"><h2>Systems</h2><div id="systems"></div><p class="muted">Device telemetry is not connected. Profile settings do not indicate equipment state.</p></section></div>
-<footer id="updated">No live readings loaded.</footer></main><script src="/app.js"></script><script src="/ring.js"></script></body></html>
+<section class="panel" id="learningPanel"><div class="section-head"><h2>Learning &amp; irrigation</h2><button id="learningRefresh">Analyze latest readings</button></div>
+<p id="learningStatus" role="status">Connect your dashboard to view learning and log events.</p><div id="learningStats" class="summary"></div><div id="learningReport"></div>
+<details><summary>Log irrigation or a room change</summary><p>Enter measured totals for the selected scope. Leave unknown amounts blank.</p>
+<form id="eventForm" hidden><div class="formgrid">
+<label>Event type<select id="eventKind"><option value="irrigation">Irrigation</option><option value="change">Room / feed / lighting change</option></select></label>
+<label>Event time<input id="eventAt" type="datetime-local" required></label>
+<label>Scope<select id="eventProbe"><option value="">Whole room</option><option value="1">Probe 1 area</option><option value="2">Probe 2 area</option><option value="3">Probe 3 area</option></select></label>
+<label>Duration (seconds)<input id="eventDuration" type="number" min="0" max="86400" step="any"></label>
+<label>Applied volume total (liters)<input id="eventVolume" type="number" min="0" max="1000000" step="any"></label>
+<label>Feed EC (mS/cm)<input id="eventFeed" type="number" min="0" max="100" step="any"></label>
+<label>Runoff total (liters)<input id="eventRunoff" type="number" min="0" max="1000000" step="any"></label>
+<label class="event-note">Notes / description of change<textarea id="eventNote" maxlength="1000" rows="3"></textarea></label>
+</div><p id="eventTimezone" class="muted"></p><button id="eventSave">Save event</button><p id="eventMessage" role="status"></p></form></details>
+<details><summary>Recent event log</summary><div id="irrigationEvents"></div></details></section>
+<footer id="updated">No live readings loaded.</footer></main><script src="/learning.js"></script><script src="/app.js"></script><script src="/ring.js"></script></body></html>
+

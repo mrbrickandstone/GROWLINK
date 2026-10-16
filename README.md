@@ -26,5 +26,5 @@ Run `npm test` with Node.js 22 or newer. The recovered package has no third-part
 
 ## Next work
 
-See [MONITOR_SETUP.md](MONITOR_SETUP.md) for the scheduler release gate and live verification requirements. Existing baseline records are preserved; previous gaps remain gaps. No AI training or automatic recommendations are implemented by this collector.
+See [MONITOR_SETUP.md](MONITOR_SETUP.md) for the scheduler release gate and live verification requirements. Existing baseline records are preserved; previous gaps remain gaps. The Learning & irrigation section adds daily descriptive reports, a fresh seven-day baseline, collection coverage and an append-only irrigation/change log. See [LEARNING_SETUP.md](LEARNING_SETUP.md). No AI training or automatic equipment control is implemented.
 
