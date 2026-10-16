@@ -12,11 +12,13 @@ function createAuth(store, env, origin) {
     name = secure ? "__Host-farber-session" : "farber-session",
     flowName = secure ? "__Host-farber-flow" : "farber-flow";
   let discovery;
-  const setCookie = (res, n, v, age) =>
-    res.setHeader(
-      "Set-Cookie",
+  const setCookie = (res, n, v, age) => {
+    const prior = res.getHeader("Set-Cookie") || [];
+    res.setHeader("Set-Cookie", [
+      ...(Array.isArray(prior) ? prior : [prior]),
       `${n}=${v}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${age}${secure ? "; Secure" : ""}`,
-    );
+    ]);
+  };
   async function config() {
     if (
       !env.SECURITY_OIDC_ISSUER ||
@@ -33,6 +35,8 @@ function createAuth(store, env, origin) {
           new URL(env.SECURITY_OIDC_ISSUER),
           env.SECURITY_OIDC_CLIENT_ID,
           env.SECURITY_OIDC_CLIENT_SECRET,
+          undefined,
+          { timeout: 10, execute: [client.enableNonRepudiationChecks] },
         )
         .catch((e) => {
           discovery = null;
@@ -85,8 +89,8 @@ function createAuth(store, env, origin) {
     },
     async callback(req, res, url) {
       const flowId = cookie(req, flowName),
-        flow = store.getSession(flowId);
-      store.removeSession(flowId);
+        flow = store.consumeSession(flowId, "oidc-flow");
+      setCookie(res, flowName, "", 0);
       if (flow?.kind !== "oidc-flow") throw error("LOGIN_EXPIRED", 401);
       const { client, configuration } = await config();
       const tokens = await client.authorizationCodeGrant(configuration, url, {
@@ -94,22 +98,26 @@ function createAuth(store, env, origin) {
         expectedState: flow.state,
         expectedNonce: flow.nonce,
         idTokenExpected: true,
+        maxAge: 0,
       });
       const claims = tokens.claims();
       const id = claims?.iss + "|" + claims?.sub;
-      const u = store.user(id);
-      if (!u) throw error("NAMED_USER_NOT_PROVISIONED", 403);
       const mfa = Array.isArray(claims.amr) && claims.amr.includes("mfa");
-      if (u.role === "owner" && !mfa) throw error("OWNER_MFA_REQUIRED", 403);
       const sid = crypto.randomBytes(32).toString("hex"),
-        csrf = crypto.randomBytes(32).toString("hex");
-      store.session(
-        sid,
-        { kind: "user", userId: u.id, mfa, csrf },
-        Math.min(store.now() + 8 * 3600000, claims.exp * 1000),
-      );
-      store.audit(u, "session.created", { mfa });
-      setCookie(res, name, sid, 8 * 3600);
+        csrf = crypto.randomBytes(32).toString("hex"),
+        now = store.now(),
+        expires = Math.min(now + 8 * 3600000, claims.exp * 1000),
+        age = Math.floor((expires - now) / 1000);
+      if (!Number.isFinite(age) || age <= 0) throw error("LOGIN_EXPIRED", 401);
+      store.tx(() => {
+        const u = store.user(id);
+        if (!u) throw error("NAMED_USER_NOT_PROVISIONED", 403);
+        if (u.role === "owner" && !mfa) throw error("OWNER_MFA_REQUIRED", 403);
+        store.removeSession(cookie(req, name));
+        store.session(sid, { kind: "user", userId: u.id, mfa, csrf }, expires);
+        store.audit(u, "session.created", { mfa });
+      });
+      setCookie(res, name, sid, age);
       res.writeHead(302, { Location: "/" });
       res.end();
     },
@@ -117,6 +125,7 @@ function createAuth(store, env, origin) {
       const s = store.getSession(cookie(req, name));
       if (s?.kind !== "user") return null;
       const u = store.user(s.userId);
+      if (u?.role === "owner" && !s.mfa) return null;
       return u
         ? { ...u, mfa: s.mfa, csrf: s.csrf, externalAuthenticated: true }
         : null;

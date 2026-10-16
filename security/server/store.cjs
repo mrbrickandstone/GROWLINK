@@ -144,6 +144,15 @@ class Store {
   removeSession(id) {
     if (id) this.db.prepare("DELETE FROM sessions WHERE id=?").run(digest(id));
   }
+  consumeSession(id, kind) {
+    if (!id) return null;
+    const row = this.db
+      .prepare(
+        "DELETE FROM sessions WHERE id=? AND json_extract(data,'$.kind')=? RETURNING data,expires",
+      )
+      .get(digest(id), kind);
+    return row && row.expires > this.now() ? JSON.parse(row.data) : null;
+  }
   authorize(actor, action, cameraId, w) {
     if (!actor) throw error("SIGN_IN_REQUIRED", 401);
     if (actor.externalAuthenticated) {
