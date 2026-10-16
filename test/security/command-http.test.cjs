@@ -8,6 +8,26 @@ const { test } = require("node:test"),
 const { Store } = require("../../security/server/store.cjs");
 const { LocalArchive } = require("../../security/server/archive.cjs");
 const { createServer } = require("../../security/server/http.cjs");
+test("pipeline observations respect camera scope and are withheld from inspector sessions", async (t) => {
+  const f = await fixture(t);
+  f.store.put("pipeline-health", "one", { cameraId: "one", status: "behind" });
+  f.store.put("pipeline-health", "secret", {
+    cameraId: "secret",
+    status: "outside_window",
+  });
+  f.owner.cameraIds = ["one"];
+  let response = await f.call("/api/overview");
+  let overview = await response.json();
+  assert.deepEqual(
+    overview.pipelineHealth.map((row) => row.cameraId),
+    ["one"],
+  );
+  response = await f.call("/api/overview", null, {
+    "x-test-actor": "inspector",
+  });
+  overview = await response.json();
+  assert.deepEqual(overview.pipelineHealth, []);
+});
 async function fixture(t, { review = false, anonymous = false } = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "farber-http-")),
     store = new Store(root),

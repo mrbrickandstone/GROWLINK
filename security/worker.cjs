@@ -3,6 +3,7 @@ process.umask(0o077);
 const path = require("node:path");
 const { Store } = require("./server/store.cjs");
 const { archiveFor } = require("./server/archive.cjs");
+const { observePipelines } = require("./server/pipeline.cjs");
 const {
   DiskGuard,
   JOB_HEADROOM,
@@ -28,25 +29,42 @@ let stopped = false,
 async function beat() {
   if (activeJob) store.renew(activeJob);
   const capacity = disk.inspect(activeJob ? 0 : JOB_HEADROOM);
+  const faultCodes = [];
+  if (capacity.code) faultCodes.push(capacity.code);
+  if (!capacity.paused && !stopped) {
+    try {
+      scheduleRing(store);
+    } catch {
+      faultCodes.push("SCHEDULER_FAILED");
+    }
+  }
+  try {
+    faultCodes.push(...observePipelines(store).faultCodes);
+  } catch {
+    faultCodes.push("PIPELINE_OBSERVATION_FAILED");
+  }
   const failures = store.db
     .prepare(
       "SELECT count(*) AS n FROM jobs WHERE state IN ('blocked','failed') OR (state='queued' AND error IS NOT NULL)",
     )
     .get().n;
+  if (lastError || failures) faultCodes.push("TRANSFER_FAILED");
   const detail = {
     status:
       capacity.state === "unknown"
         ? "unknown"
-        : capacity.code || lastError || failures
+        : faultCodes.length
           ? "failed"
           : "ok",
     detail:
       capacity.code ||
       lastError ||
+      faultCodes[0] ||
       (failures
         ? "Transfer failures require recovery"
         : "Worker running; this does not establish camera capture health"),
     unresolvedJobs: failures,
+    faultCodes: [...new Set(faultCodes)].sort(),
     disk: capacity,
   };
   const previous = store.get("heartbeats", "archive-worker")?.disk;
@@ -76,6 +94,7 @@ async function beat() {
           body: JSON.stringify({
             component: "archive-worker",
             status: detail.status,
+            faultCodes: detail.faultCodes,
           }),
           redirect: "error",
           signal: AbortSignal.timeout(10000),
@@ -106,7 +125,6 @@ for (const s of ["SIGTERM", "SIGINT"])
     ring = require("../lib/ring.cjs").client(process.env);
   do {
     await reconcileHolds(store, archive);
-    if (!disk.inspect(JOB_HEADROOM).paused) scheduleRing(store);
     let job;
     while (
       !stopped &&

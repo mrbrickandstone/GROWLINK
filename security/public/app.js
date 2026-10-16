@@ -132,6 +132,49 @@ function workerHealth() {
         : `${(disk.freeBytes / 1e9).toFixed(1)} GB free · ${(disk.reserveBytes / 1e9).toFixed(1)} GB reserve.`;
   return `<section class="panel" aria-label="Archive worker health"><h2>${esc(label)}</h2><p>${esc(space)} ${disk?.paused && fresh ? "New jobs are paused. Transfers retry after sufficient space returns." : ""}</p><small>Last report: ${esc(date(h?.at))}. This does not establish camera recording health. Independent alert delivery remains uncommissioned.</small></section>`;
 }
+function elapsed(ms) {
+  if (ms == null) return "—";
+  if (ms < 60000) return `${(ms / 1000).toFixed(3)} seconds`;
+  if (ms < 3600000) return `${(ms / 60000).toFixed(1)} minutes`;
+  if (ms < 86400000) return `${(ms / 3600000).toFixed(1)} hours`;
+  return `${(ms / 86400000).toFixed(1)} days`;
+}
+function pipelineHealth() {
+  if (session?.user?.role === "inspector") return "";
+  const labels = {
+    not_configured: "Monitoring not configured",
+    current: "Within transfer target",
+    unknown: "Needs verification",
+    blocked: "Transfers blocked",
+    behind: "Transfers behind",
+    at_risk: "Source window at risk",
+    outside_window: "Beyond estimated source window",
+  };
+  const rows = data.cameras
+    .map((c) => {
+      const h = data.pipelineHealth?.find((row) => row.cameraId === c.id);
+      const fresh =
+        h && Date.now() >= h.observedAt && Date.now() - h.observedAt <= 90000;
+      const label = fresh
+        ? labels[h.status] || "Needs verification"
+        : "Monitoring unconfirmed";
+      const stateClass =
+        fresh && h.status === "current"
+          ? "state-verified"
+          : fresh && h.status === "outside_window"
+            ? "state-failed"
+            : "state-degraded";
+      const source =
+        h?.sourceWindowRemainingMs == null
+          ? "No missing originals in the evaluated window"
+          : h.sourceWindowRemainingMs <= 0
+            ? "Oldest missing footage is beyond the estimated source window"
+            : `${elapsed(h.sourceWindowRemainingMs)} to the estimated source boundary`;
+      return `<div class="pipeline-row"><div><h3>${esc(c.name)} · ${esc(c.room)}</h3><b class="${stateClass}">${esc(label)}</b></div>${h?.configured && h.originals ? `<dl><div><dt>Originals not yet preserved</dt><dd>${esc(elapsed(h.originals.missingMs))}</dd></div><div><dt>Not independently archived</dt><dd>${esc(elapsed(h.archive.missingMs))}</dd></div><div><dt>Pending transfer jobs</dt><dd>${esc(h.jobs.pending)} · ${esc(h.jobs.failed)} blocked/failed</dd></div></dl><p>${fresh ? "" : "Last observation: "}${esc(source)}. ${h.historyBasis === "configured-setting" ? "Based on the recorded storage setting" : "Uses Ring’s advertised maximum; camera setting unconfirmed"} (${esc(h.sourceHistoryDays)} days). Availability can be shorter.</p>${h.originals.oldestMissingAt !== null ? `<small>Oldest missing original: ${esc(date(h.originals.oldestMissingAt))}</small>` : ""}<small>Evaluated through ${esc(date(h.readyThrough))} · ${esc((h.faultReasons || []).join(" · "))}</small>` : `<p>${h?.configured ? "Recording configuration requires review." : "Enable and qualify a recording source before monitoring transfers."}</p>`}</div>`;
+    })
+    .join("");
+  return `<section class="panel" aria-label="Transfer backlog and source windows"><h2>Transfer backlog & source windows</h2><p>These observations use verified archive records, not camera online status. Missing intervals remain visible even when a transfer job completes. Original footage and playback jobs have separate outcomes.</p>${rows}</section>`;
+}
 function overview() {
   const groups = new Map();
   for (const c of data.cameras) {
@@ -142,6 +185,7 @@ function overview() {
   return (
     summary() +
     `<div id="workerHealth">${workerHealth()}</div>` +
+    `<div id="pipelineHealth">${pipelineHealth()}</div>` +
     [...groups]
       .map(
         ([name, cameras]) =>
@@ -383,6 +427,8 @@ function tick() {
     timeZoneName: "short",
   }).format(new Date());
   if (data && $("#workerHealth")) $("#workerHealth").innerHTML = workerHealth();
+  if (data && $("#pipelineHealth"))
+    $("#pipelineHealth").innerHTML = pipelineHealth();
 }
 tick();
 setInterval(tick, 30000);

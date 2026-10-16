@@ -97,11 +97,27 @@ function initializeSite() {
           !Number.isSafeInteger(c.enabledAt)
         )
           throw error("INVALID_RING_CAMERA");
+        if (
+          c.continuousHistoryDays !== undefined &&
+          (!Number.isSafeInteger(c.continuousHistoryDays) ||
+            c.continuousHistoryDays < 1 ||
+            c.continuousHistoryDays > 14 ||
+            typeof c.continuousHistoryEvidence !== "string" ||
+            !c.continuousHistoryEvidence.trim() ||
+            c.continuousHistoryEvidence.length > 500)
+        )
+          throw error("RING_HISTORY_SETTING_EVIDENCE_REQUIRED");
         store.put("cameras", c.id, {
           ...old,
           providerId: c.providerId,
           enabledAt: c.enabledAt,
           exportEnabled: c.exportEnabled === true,
+          ...(c.continuousHistoryDays !== undefined
+            ? {
+                continuousHistoryDays: c.continuousHistoryDays,
+                continuousHistoryEvidence: c.continuousHistoryEvidence.trim(),
+              }
+            : {}),
         });
       }
       store.audit({ id: "local-administrator" }, "ring.configuration.changed", {

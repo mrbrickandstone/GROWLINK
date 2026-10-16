@@ -45,6 +45,7 @@ const { assessMedia } = require("../../lib/security/coverage.cjs");
 const { DAY, error } = require("./store.cjs");
 const { probe: probeAsync } = require("./probe.cjs");
 const { pipeline } = require("node:stream/promises");
+const { scheduleRing } = require("./pipeline.cjs");
 function prepareDirectories(store) {
   for (const dir of ["staging/originals", "derivatives", "exports"])
     fs.mkdirSync(path.join(store.root, dir), { recursive: true, mode: 0o700 });
@@ -362,27 +363,6 @@ async function reconcile(store, archive) {
     }
   }
   return { checked: store.all("segments").length, invalid };
-}
-function scheduleRing(store) {
-  const policy = store.get("policy", "ring");
-  if (!policy?.automatedExportsApproved || !policy.decisionReference) return 0;
-  let count = 0;
-  const ready = Math.floor((store.now() - 300000) / 299000) * 299000;
-  for (const c of store
-    .all("cameras")
-    .filter((c) => c.source === "ring" && c.exportEnabled && c.enabledAt)) {
-    const start = Math.max(c.enabledAt, ready - 13 * DAY);
-    for (let t = start; t + 299000 <= ready; t += 299000) {
-      store.enqueue({
-        kind: "ring-export",
-        cameraId: c.id,
-        requestStart: Math.max(c.enabledAt, t - 1000),
-        requestEnd: t + 299000,
-      });
-      count++;
-    }
-  }
-  return count;
 }
 async function reconcileHolds(store, archive) {
   if (!archive.independent) return;

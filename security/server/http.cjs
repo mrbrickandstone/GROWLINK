@@ -153,16 +153,19 @@ function createServer({
           deletions: actor.role === "owner" ? store.all("deletions") : [],
           jobs: inspector ? [] : store.jobs(),
           heartbeats: inspector ? [] : store.all("heartbeats"),
+          pipelineHealth: inspector
+            ? []
+            : store
+                .all("pipeline-health")
+                .filter((row) => ids.includes(row.cameraId)),
           users:
             actor.role === "owner"
-              ? store
-                  .all("users")
-                  .map(({ id, name, role, enabled }) => ({
-                    id,
-                    name,
-                    role,
-                    enabled,
-                  }))
+              ? store.all("users").map(({ id, name, role, enabled }) => ({
+                  id,
+                  name,
+                  role,
+                  enabled,
+                }))
               : [],
           audit: ["owner", "auditor"].includes(actor.role)
             ? store.auditLog()

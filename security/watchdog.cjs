@@ -39,7 +39,7 @@ const server = http.createServer(async (req, res) => {
         b += c;
       }
       const j = JSON.parse(b);
-      dog.heartbeat(j.component, j.status);
+      dog.heartbeat(j.component, j.status, j.faultCodes);
       res.writeHead(204);
       res.end();
     } else if (req.method === "GET" && req.url === "/status") {
