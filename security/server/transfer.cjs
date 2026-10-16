@@ -3,11 +3,36 @@ const fs = require("node:fs"),
   path = require("node:path"),
   crypto = require("node:crypto");
 const { spawn } = require("node:child_process");
-function command(bin, args, timeout) {
-  return new Promise((resolve) => {
+const { DiskGuard, JOB_HEADROOM } = require("./capacity.cjs");
+function command(bin, args, timeout, disk) {
+  disk.assertSpace(JOB_HEADROOM);
+  return new Promise((resolve, reject) => {
     const child = spawn(bin, args, { stdio: "ignore", timeout });
-    child.on("error", () => resolve({ status: 1 }));
-    child.on("exit", (code) => resolve({ status: code }));
+    let fault, killTimer;
+    const monitor = setInterval(() => {
+      try {
+        disk.assertSpace();
+      } catch (e) {
+        fault = e;
+        clearInterval(monitor);
+        child.kill("SIGTERM");
+        killTimer = setTimeout(() => child.kill("SIGKILL"), 2000);
+      }
+    }, 2000);
+    const done = (code) => {
+      clearInterval(monitor);
+      clearTimeout(killTimer);
+      if (!fault) {
+        try {
+          disk.assertSpace();
+        } catch (e) {
+          fault = e;
+        }
+      }
+      fault ? reject(fault) : resolve({ status: code });
+    };
+    child.once("error", () => done(1));
+    child.once("exit", done);
   });
 }
 const {
@@ -24,38 +49,47 @@ function prepareDirectories(store) {
   for (const dir of ["staging/originals", "derivatives", "exports"])
     fs.mkdirSync(path.join(store.root, dir), { recursive: true, mode: 0o700 });
 }
-async function derive(store, file, id) {
+async function derive(store, file, id, disk = new DiskGuard(store.root)) {
   const dir = path.join(store.root, "derivatives"),
     video = path.join(dir, id + ".mp4"),
     image = path.join(dir, id + ".jpg");
   if (!fs.existsSync(video)) {
     const temp = path.join(dir, id + "." + crypto.randomUUID() + ".mp4");
-    const r = await command(
-      "ffmpeg",
-      [
-        "-v",
-        "error",
-        "-nostdin",
-        "-i",
-        file,
-        "-map",
-        "0:v:0",
-        "-an",
-        "-vf",
-        "scale=-2:720",
-        "-c:v",
-        "libx264",
-        "-preset",
-        "veryfast",
-        "-crf",
-        "24",
-        "-movflags",
-        "+faststart",
-        "-y",
-        temp,
-      ],
-      300000,
-    );
+    let r;
+    try {
+      r = await command(
+        "ffmpeg",
+        [
+          "-v",
+          "error",
+          "-nostdin",
+          "-i",
+          file,
+          "-map",
+          "0:v:0",
+          "-an",
+          "-vf",
+          "scale=-2:720",
+          "-c:v",
+          "libx264",
+          "-preset",
+          "veryfast",
+          "-crf",
+          "24",
+          "-movflags",
+          "+faststart",
+          "-y",
+          temp,
+        ],
+        300000,
+        disk,
+      );
+    } catch (e) {
+      try {
+        fs.unlinkSync(temp);
+      } catch {}
+      throw e;
+    }
     if (r.status !== 0) {
       try {
         fs.unlinkSync(temp);
@@ -66,29 +100,45 @@ async function derive(store, file, id) {
     fs.chmodSync(video, 0o600);
   }
   if (!fs.existsSync(image)) {
-    const r = await command(
-      "ffmpeg",
-      [
-        "-v",
-        "error",
-        "-nostdin",
-        "-i",
-        video,
-        "-frames:v",
-        "1",
-        "-vf",
-        "scale=640:-2",
-        "-y",
-        image,
-      ],
-      30000,
-    );
-    if (r.status !== 0) throw error("THUMBNAIL_FAILED", 502);
+    const tempImage = path.join(dir, id + "." + crypto.randomUUID() + ".jpg");
+    let r;
+    try {
+      r = await command(
+        "ffmpeg",
+        [
+          "-v",
+          "error",
+          "-nostdin",
+          "-i",
+          video,
+          "-frames:v",
+          "1",
+          "-vf",
+          "scale=640:-2",
+          "-y",
+          tempImage,
+        ],
+        30000,
+        disk,
+      );
+      if (r.status !== 0) throw error("THUMBNAIL_FAILED", 502);
+      fs.renameSync(tempImage, image);
+    } finally {
+      try {
+        fs.unlinkSync(tempImage);
+      } catch {}
+    }
     fs.chmodSync(image, 0o600);
   }
   return { video: path.basename(video), image: path.basename(image) };
 }
-async function transfer(store, archive, job, { ring } = {}) {
+async function transfer(
+  store,
+  archive,
+  job,
+  { ring, disk = new DiskGuard(store.root) } = {},
+) {
+  disk.assertSpace(JOB_HEADROOM);
   prepareDirectories(store);
   const p = job.payload,
     camera = store.get("cameras", p.cameraId);
@@ -109,11 +159,12 @@ async function transfer(store, archive, job, { ring } = {}) {
     file = path.join(store.root, "staging", job.id + ".resume.mp4");
     await pipeline(
       await archive.read(prior.receipt),
+      disk.writer(),
       fs.createWriteStream(file, { mode: 0o600 }),
     );
     if ((await hashFile(file)) !== prior.sha256)
       throw error("ARCHIVE_READBACK_MISMATCH", 409);
-    const derivative = await derive(store, file, job.id);
+    const derivative = await derive(store, file, job.id, disk);
     derivative.sha256 = await hashFile(
       path.join(store.root, "derivatives", derivative.video),
     );
@@ -179,6 +230,8 @@ async function transfer(store, archive, job, { ring } = {}) {
       response,
       path.join(store.root, "staging"),
       job.id,
+      512 * 1024 * 1024,
+      (bytes) => disk.assertSpace(bytes),
     );
     file = path.join(store.root, "staging", media.file);
     sha = media.sha256;
@@ -200,7 +253,10 @@ async function transfer(store, archive, job, { ring } = {}) {
     ingestedAt + 90 * DAY,
     assessment.actualEnd + 60 * DAY,
   );
-  const receipt = await archive.put(file, sha, size, retainUntil);
+  disk.assertSpace(JOB_HEADROOM);
+  const receipt = await archive.put(file, sha, size, retainUntil, {
+    beforeWrite: (bytes) => disk.assertSpace(bytes),
+  });
   if (archive.lockApproved && !receipt.immutableStorageVerified)
     throw error("RETENTION_PROTECTION_UNVERIFIED", 409);
   const s = {
@@ -255,7 +311,7 @@ async function transfer(store, archive, job, { ring } = {}) {
       independent: receipt.independent,
     });
   });
-  s.derivative = await derive(store, file, job.id);
+  s.derivative = await derive(store, file, job.id, disk);
   s.derivative.sha256 = await hashFile(
     path.join(store.root, "derivatives", s.derivative.video),
   );

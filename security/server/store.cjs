@@ -629,6 +629,16 @@ class Store {
       .run(this.now() + 600000, job.id, job.owner);
     if (r.changes !== 1) throw error("LEASE_LOST", 409);
   }
+  deferForCapacity(job, code) {
+    if (!["DISK_SPACE_LOW", "DISK_CAPACITY_UNKNOWN"].includes(code))
+      throw error("INVALID_CAPACITY_DEFERRAL");
+    const r = this.db
+      .prepare(
+        "UPDATE jobs SET state='queued',error=?,next=?,lease=NULL,owner=NULL,attempts=MAX(0,attempts-1) WHERE id=? AND owner=? AND state='running'",
+      )
+      .run(code, this.now() + 30000, job.id, job.owner);
+    if (r.changes !== 1) throw error("LEASE_LOST", 409);
+  }
   jobs() {
     return this.db
       .prepare(

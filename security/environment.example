@@ -19,6 +19,8 @@ AWS_ACCESS_KEY_ID=
 AWS_SECRET_ACCESS_KEY=
 SECURITY_STORAGE_LOCK_APPROVED=false
 SECURITY_ENABLE_PHYSICAL_DELETION=false
+# Pause ingestion below reserve plus per-job headroom; warning at 2x, resume at 1.25x.
+SECURITY_MIN_FREE_BYTES=20000000000
 
 # Approved Ring worker only; leave unset until dedicated access is commissioned.
 RING_CLIENT_ID=

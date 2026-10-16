@@ -21,7 +21,7 @@ class LocalArchive {
       throw error("INVALID_OBJECT_KEY");
     return path.join(this.root, key);
   }
-  async put(file, sha, size, retainUntil) {
+  async put(file, sha, size, retainUntil, { beforeWrite = () => {} } = {}) {
     const key = keyFor(sha),
       dest = this.file(key);
     fs.mkdirSync(path.dirname(dest), { recursive: true, mode: 0o700 });
@@ -29,6 +29,16 @@ class LocalArchive {
     try {
       await pipeline(
         fs.createReadStream(file),
+        new Transform({
+          transform(chunk, encoding, done) {
+            try {
+              beforeWrite(chunk.length);
+              done(null, chunk);
+            } catch (e) {
+              done(e);
+            }
+          },
+        }),
         fs.createWriteStream(tmp, { flags: "wx", mode: 0o600 }),
       );
       const fd = fs.openSync(tmp, "r");

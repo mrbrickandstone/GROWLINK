@@ -4,6 +4,11 @@ const path = require("node:path");
 const { Store } = require("./server/store.cjs");
 const { archiveFor } = require("./server/archive.cjs");
 const {
+  DiskGuard,
+  JOB_HEADROOM,
+  capacityError,
+} = require("./server/capacity.cjs");
+const {
   transfer,
   reconcile,
   reconcileHolds,
@@ -14,25 +19,44 @@ const store = new Store(
   ),
   archive = archiveFor(process.env, store.root),
   once = process.argv.includes("--once");
+const disk = new DiskGuard(store.root, {
+  paused: store.get("heartbeats", "archive-worker")?.disk?.paused === true,
+});
 let stopped = false,
   lastError = null,
   activeJob = null;
 async function beat() {
   if (activeJob) store.renew(activeJob);
+  const capacity = disk.inspect(activeJob ? 0 : JOB_HEADROOM);
   const failures = store.db
     .prepare(
       "SELECT count(*) AS n FROM jobs WHERE state IN ('blocked','failed') OR (state='queued' AND error IS NOT NULL)",
     )
     .get().n;
   const detail = {
-    status: lastError || failures ? "failed" : "ok",
+    status:
+      capacity.state === "unknown"
+        ? "unknown"
+        : capacity.code || lastError || failures
+          ? "failed"
+          : "ok",
     detail:
+      capacity.code ||
       lastError ||
       (failures
         ? "Transfer failures require recovery"
         : "Worker running; this does not establish camera capture health"),
     unresolvedJobs: failures,
+    disk: capacity,
   };
+  const previous = store.get("heartbeats", "archive-worker")?.disk;
+  if (previous?.state !== capacity.state)
+    store.audit({ id: "transfer-worker" }, "worker.capacity.changed", {
+      from: previous?.state || "unobserved",
+      to: capacity.state,
+      freeBytes: capacity.freeBytes,
+      paused: capacity.paused,
+    });
   store.heartbeat("archive-worker", detail);
   if (
     process.env.SECURITY_WATCHDOG_URL &&
@@ -82,9 +106,13 @@ for (const s of ["SIGTERM", "SIGINT"])
     ring = require("../lib/ring.cjs").client(process.env);
   do {
     await reconcileHolds(store, archive);
-    scheduleRing(store);
+    if (!disk.inspect(JOB_HEADROOM).paused) scheduleRing(store);
     let job;
-    while (!stopped && (job = store.claim())) {
+    while (
+      !stopped &&
+      !disk.inspect(JOB_HEADROOM).paused &&
+      (job = store.claim())
+    ) {
       try {
         activeJob = job;
         await reconcileHolds(store, archive);
@@ -94,12 +122,30 @@ for (const s of ["SIGTERM", "SIGINT"])
             archive,
             job,
           );
-        else await transfer(store, archive, job, { ring });
+        else await transfer(store, archive, job, { ring, disk });
         activeJob = null;
         lastError = null;
         console.log(JSON.stringify({ job: job.id, state: "complete" }));
       } catch (e) {
         activeJob = null;
+        if (capacityError(e)) {
+          lastError =
+            e.message === "DISK_CAPACITY_UNKNOWN"
+              ? e.message
+              : "DISK_SPACE_LOW";
+          disk.paused = true;
+          store.deferForCapacity(job, lastError);
+          if (job.payload.kind === "evidence-export") {
+            const record = store.get("exports", job.payload.exportId);
+            store.put("exports", record.id, {
+              ...record,
+              state: "queued",
+              error: lastError,
+            });
+          }
+          await beat();
+          break;
+        }
         lastError = /^[A-Z_0-9]+$/.test(e.message)
           ? e.message
           : "TRANSFER_FAILED";
@@ -122,6 +168,7 @@ for (const s of ["SIGTERM", "SIGINT"])
       }
       await beat();
     }
+    await beat();
     if (process.env.SECURITY_ENABLE_PHYSICAL_DELETION === "true") {
       for (const r of store
         .all("deletions")

@@ -112,6 +112,26 @@ function status(c) {
 function cameraCard(c) {
   return `<article class="camera"><div class="camera-image">${c.media.thumbnailId ? `<img src="/api/media/${c.media.thumbnailId}/thumbnail" alt="Historical sample from ${esc(c.name)}"><span class="label">RECORDED SAMPLE · ${esc(date(c.media.latest))}</span>` : '<div class="empty-image"><span>▧</span>No verified footage imported</div><span class="label">RECORDING UNVERIFIED</span>'}</div><div class="camera-content"><div class="camera-title"><h3>${esc(c.name)}</h3><span class="chip">RING</span></div><div class="camera-location">${esc(c.model || "Model unverified")} · ${esc(c.room)}</div><div class="status-list">${status(c)}</div><button class="secondary" data-camera="${esc(c.id)}">Browse recordings →</button>${allowed("configure") ? `<details class="mapping"><summary>Map room & location</summary><form data-form="mapping"><input name="id" type="hidden" value="${esc(c.id)}"><label>Camera name<input name="name" value="${esc(c.name)}" required></label><label>Location<input name="location" value="${esc(c.location)}" required></label><label>Room<input name="room" value="${esc(c.room)}" required></label><button>Save mapping</button></form></details>` : ""}</div></article>`;
 }
+function workerHealth() {
+  if (session?.user?.role === "inspector") return "";
+  const h = data.heartbeats.find((h) => h.component === "archive-worker"),
+    fresh = h && Date.now() >= h.at && Date.now() - h.at <= 90000,
+    disk = h?.disk,
+    label = !fresh
+      ? "Worker status unconfirmed"
+      : disk?.paused
+        ? "Transfers paused"
+        : disk?.state === "warning"
+          ? "Storage running low"
+          : h.status === "ok"
+            ? "Worker reporting"
+            : "Worker needs attention",
+    space =
+      disk?.freeBytes == null
+        ? "Free disk space is unverified."
+        : `${(disk.freeBytes / 1e9).toFixed(1)} GB free · ${(disk.reserveBytes / 1e9).toFixed(1)} GB reserve.`;
+  return `<section class="panel" aria-label="Archive worker health"><h2>${esc(label)}</h2><p>${esc(space)} ${disk?.paused && fresh ? "New jobs are paused. Transfers retry after sufficient space returns." : ""}</p><small>Last report: ${esc(date(h?.at))}. This does not establish camera recording health. Independent alert delivery remains uncommissioned.</small></section>`;
+}
 function overview() {
   const groups = new Map();
   for (const c of data.cameras) {
@@ -121,6 +141,7 @@ function overview() {
   }
   return (
     summary() +
+    `<div id="workerHealth">${workerHealth()}</div>` +
     [...groups]
       .map(
         ([name, cameras]) =>
@@ -237,7 +258,7 @@ async function reload() {
   $("#signIn").hidden = !!session.user;
   $("#signOut").hidden = !session.user || session.review;
   $("#notice").textContent = session.review
-    ? "LOCAL REVIEW · Real pilot footage, read-only. Independent archive, named sign-in and notification delivery are not commissioned."
+    ? "LOCAL REVIEW · Read-only development data. Independent archive, named sign-in and notification delivery are not commissioned."
     : session.user
       ? `${session.user.name} · ${session.user.role} · Recording-source qualification pending.`
       : session.signInConfigured
@@ -361,6 +382,7 @@ function tick() {
     hour12: false,
     timeZoneName: "short",
   }).format(new Date());
+  if (data && $("#workerHealth")) $("#workerHealth").innerHTML = workerHealth();
 }
 tick();
 setInterval(tick, 30000);
