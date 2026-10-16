@@ -146,7 +146,7 @@ class LocalArchive {
   }
 }
 class S3Archive {
-  constructor(env) {
+  constructor(env, { credentials } = {}) {
     const sdk = require("@aws-sdk/client-s3");
     this.sdk = sdk;
     this.bucket = env.SECURITY_S3_BUCKET;
@@ -157,6 +157,7 @@ class S3Archive {
     )
       throw error("ARCHIVE_HTTPS_REQUIRED");
     this.client = new sdk.S3Client({
+      ...(credentials ? { credentials } : {}),
       region: env.SECURITY_S3_REGION || "us-east-1",
       ...(env.SECURITY_S3_ENDPOINT
         ? { endpoint: env.SECURITY_S3_ENDPOINT }
