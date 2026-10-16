@@ -11,7 +11,7 @@ Every cleanup requires all of the following:
 - A verified original with a matching independent, versioned, immutable archive receipt; a local review archive cannot qualify.
 - Fresh full-byte SHA256/size readback of that exact archived version, and fresh COMPLIANCE retention metadata covering the later of 90 days after ingestion, 60 days after the footage ends, and one day after the check. The storage-lock gate must already be approved. Verification performs no retention extension or archive mutation.
 - For Ring, an approved retention policy and recorded decision reference. Technical ability does not resolve vendor policy.
-- No overlapping pending/active investigation hold, requested/approved deletion, active associated job or recent playback access.
+- No overlapping pending/active investigation hold, requested/approved deletion, running associated job, queued original/requested-playback job or recent playback access. A queued automatic playback-build job can recover from the archive and does not pin the local duplicate.
 - Exact expected managed paths, private regular files without symlinked parents or multiple hard links, and matching byte hashes.
 
 Only the known staging original, an old managed resume copy, and the recorded playback MP4 are candidates. Thumbnails, imported source files, `.pilot` footage, alternate response bytes and archived originals are preserved. Unknown or altered local files require review; they are not silently removed. Local duplicate removal is separate from controlled deletion of archived evidence.
@@ -23,6 +23,8 @@ The worker journals its intent before unlinking and rechecks holds, access, jobs
 A named viewer with current playback permission can select **Prepare playback**. The authenticated, CSRF-protected request creates one durable job per segment and a 15-minute authorization request. Multiple viewers reuse that job. The worker reloads enabled users, role/camera scope, owner MFA and inspector grants before processing and again before publishing. A revoked or expired request cannot authorize completion; another still-authorized request may do so. Playback HTTP requests continue to check their own current permissions.
 
 The worker downloads the preserved original from its recorded archive version, verifies the full expected size and SHA256, and builds the separate 720p playback derivative. It does not ask Ring for new footage or start live view. Original transfers and playback jobs for the same segment cannot claim overlapping active leases. Partial, altered or oversized archive bodies fail before encoding. Handled failures remove the temporary download; a hard process kill can leave a private temporary file for subsequent maintenance review. This release does not sweep arbitrary abandoned temporary files.
+
+Initial automatic playback creation now runs as separate durable background work, after original preservation commits. It may reuse a byte-verified managed staging copy. Missing originals have queue priority over requested playback and background encoding; playback can therefore wait during catch-up. See [queue ordering and recovery](TRANSFER_MONITORING.md#preservation-priority-and-separate-playback-jobs).
 
 The browser polls for up to one minute and then offers another status check. The durable job continues independently of the dashboard. If authorization expires before the worker can process it, a new authorized request is needed. Rebuilding is also blocked when disk admission is paused. Evidence exports continue to use archived originals, not playback derivatives.
 

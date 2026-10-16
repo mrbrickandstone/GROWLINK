@@ -17,6 +17,7 @@ const {
 } = require("./server/capacity.cjs");
 const {
   transfer,
+  buildPlayback,
   reconcile,
   reconcileHolds,
   scheduleRing,
@@ -52,12 +53,18 @@ async function beat() {
   } catch {
     faultCodes.push("PIPELINE_OBSERVATION_FAILED");
   }
-  const failures = store.db
+  const failureRows = store.db
     .prepare(
-      "SELECT count(*) AS n FROM jobs WHERE state IN ('blocked','failed') OR (state='queued' AND error IS NOT NULL)",
+      "SELECT json_extract(payload,'$.kind') AS kind FROM jobs WHERE state IN ('blocked','failed') OR (state='queued' AND error IS NOT NULL)",
     )
-    .get().n;
-  if (lastError || failures) faultCodes.push("TRANSFER_FAILED");
+    .all();
+  const failures = failureRows.length,
+    playbackFailures = failureRows.filter((r) =>
+      ["playback-build", "playback-restore"].includes(r.kind),
+    ).length;
+  if (playbackFailures) faultCodes.push("PLAYBACK_BACKLOG");
+  if (failures > playbackFailures || (lastError && !playbackFailures))
+    faultCodes.push("TRANSFER_FAILED");
   const detail = {
     status:
       capacity.state === "unknown"
@@ -151,6 +158,8 @@ for (const s of ["SIGTERM", "SIGINT"])
             archive,
             job,
           );
+        else if (job.payload.kind === "playback-build")
+          await buildPlayback(store, archive, job, { disk });
         else if (job.payload.kind === "playback-restore")
           await require("./server/playback.cjs").processPlayback(
             store,

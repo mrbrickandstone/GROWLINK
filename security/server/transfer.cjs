@@ -215,20 +215,17 @@ async function transfer(
   )
     throw error("DELETION_INTENT_BLOCKS_REIMPORT", 409);
   if (prior?.verified) {
-    const derivative = await restoreDerivative(store, archive, prior, disk);
+    if (!(await archive.verify(prior.receipt)))
+      throw error("ARCHIVE_READBACK_MISMATCH", 409);
     store.tx(() => {
       store.renew(job);
-      store.put("segments", prior.id, {
-        ...prior,
-        derivative,
-        cache: { ...prior.cache, materializedAt: store.now() },
-      });
+      queueBuild(store, prior);
       store.finish(job, "complete");
-      store.audit({ id: "transfer-worker" }, "playback.derivative.recovered", {
+      store.audit({ id: "transfer-worker" }, "archive.transfer.recovered", {
         segmentId: prior.id,
       });
     });
-    return { ...prior, derivative };
+    return prior;
   }
   if (
     camera.source === "ring" &&
@@ -256,6 +253,8 @@ async function transfer(
       !policy?.decisionReference
     )
       throw error("RING_UNATTENDED_EXPORT_NOT_APPROVED", 409);
+    if (camera.exportEnabled !== true)
+      throw error("CAMERA_EXPORTS_DISABLED", 409);
     const raw = await ring.pilotRequest("download", {
       device: camera.providerId,
       body: {
@@ -334,7 +333,8 @@ async function transfer(
     nativeAuthentication: "unverified",
     ingestedAt,
     receipt,
-    derivative: null,
+    derivative: prior?.derivative || null,
+    cache: prior?.cache || null,
   };
   for (const h of store.held(s)) {
     if (
@@ -351,10 +351,9 @@ async function transfer(
   }
   store.tx(() => {
     store.renew(job);
-    store.put("segments", s.id, {
-      ...s,
-      derivative: prior?.derivative || null,
-    });
+    store.put("segments", s.id, s);
+    queueBuild(store, s);
+    store.finish(job, "complete");
     store.audit({ id: "transfer-worker" }, "archive.original.verified", {
       segmentId: s.id,
       cameraId: s.cameraId,
@@ -363,21 +362,107 @@ async function transfer(
       independent: receipt.independent,
     });
   });
-  s.derivative = await derive(store, file, job.id, disk);
-  s.derivative.sha256 = await hashFile(
-    path.join(store.root, "derivatives", s.derivative.video),
-  );
-  s.cache = { materializedAt: store.now() };
-  store.tx(() => {
+  return s;
+}
+function queueBuild(store, s) {
+  if (store.playbackReady(s)) return;
+  const id = store.enqueue({ kind: "playback-build", segmentId: s.id });
+  store.db
+    .prepare(
+      "UPDATE jobs SET state='queued',next=0,error=NULL WHERE id=? AND state='complete'",
+    )
+    .run(id);
+}
+function buildable(store, id) {
+  const s = store.get("segments", id);
+  if (
+    !s?.verified ||
+    s.deletedAt ||
+    store
+      .all("deletions")
+      .some(
+        (d) => d.segmentId === id && ["approved", "deleted"].includes(d.state),
+      )
+  )
+    throw error("PLAYBACK_ORIGINAL_UNAVAILABLE", 409);
+  if (
+    !Number.isSafeInteger(s.bytes) ||
+    s.bytes < 1 ||
+    s.receipt?.sha256 !== s.sha256 ||
+    s.receipt?.size !== s.bytes
+  )
+    throw error("INVALID_ARCHIVE_RECEIPT", 409);
+  return s;
+}
+async function buildPlayback(
+  store,
+  archive,
+  job,
+  { disk = new DiskGuard(store.root) } = {},
+) {
+  const s = buildable(store, job.payload.segmentId);
+  if (store.playbackReady(s)) {
+    store.finish(job, "complete");
+    return s;
+  }
+  disk.assertSpace(JOB_HEADROOM);
+  prepareDirectories(store);
+  let derivative;
+  if (/^[a-f0-9]{64}$/.test(s.id) && /^[a-f0-9]{64}$/.test(s.sha256)) {
+    const file = path.join(
+      store.root,
+      "staging",
+      "originals",
+      `${s.id}.${s.sha256}.mp4`,
+    );
+    try {
+      const stat = fs.lstatSync(file);
+      if (
+        stat.isFile() &&
+        stat.nlink === 1 &&
+        !(stat.mode & 0o077) &&
+        fs.realpathSync(file) ===
+          path.join(
+            fs.realpathSync(store.root),
+            "staging",
+            "originals",
+            `${s.id}.${s.sha256}.mp4`,
+          ) &&
+        stat.size === s.bytes &&
+        (await hashFile(file)) === s.sha256
+      ) {
+        derivative = await derive(store, file, s.id, disk, true);
+        derivative.sha256 = await hashFile(
+          path.join(store.root, "derivatives", derivative.video),
+        );
+      }
+    } catch (e) {
+      if (e.code !== "ENOENT") throw e;
+    }
+  }
+  if (!derivative)
+    derivative = await restoreDerivative(store, archive, s, disk);
+  return store.tx(() => {
     store.renew(job);
-    store.put("segments", s.id, s);
+    const current = buildable(store, s.id);
+    if (
+      current.sha256 !== s.sha256 ||
+      JSON.stringify(current.receipt) !== JSON.stringify(s.receipt)
+    )
+      throw error("ARCHIVE_RECEIPT_CHANGED", 409);
+    const result = {
+      ...current,
+      derivative,
+      cache: { ...current.cache, materializedAt: store.now() },
+    };
+    store.put("segments", s.id, result);
     store.finish(job, "complete");
     store.audit({ id: "transfer-worker" }, "playback.derivative.created", {
       segmentId: s.id,
-      sha256: s.derivative.sha256,
+      sha256: derivative.sha256,
     });
+    return result;
   });
-  return s;
 }
 async function reconcile(store, archive) {
   let invalid = 0;
@@ -452,6 +537,7 @@ module.exports = {
   derive,
   restoreDerivative,
   transfer,
+  buildPlayback,
   reconcile,
   reconcileHolds,
   scheduleRing,

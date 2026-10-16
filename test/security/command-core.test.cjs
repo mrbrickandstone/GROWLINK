@@ -489,7 +489,7 @@ test("transfer verifies real synthetic media and resumes derivative work from pr
   ]);
   assert.equal(made.status, 0);
   const { hashFile } = require("../../lib/security/ring-pilot.cjs"),
-    { transfer } = require("../../security/server/transfer.cjs");
+    { transfer, buildPlayback } = require("../../security/server/transfer.cjs");
   const sha = await hashFile(source),
     archive = new LocalArchive(path.join(root, "archive"));
   const id = store.enqueue({
@@ -506,6 +506,14 @@ test("transfer verifies real synthetic media and resumes derivative work from pr
   assert.equal(result.verified, true);
   assert.equal(result.probe.decoded, true);
   assert.equal(result.probe.frameTimelineValid, true);
+  assert.equal(result.derivative, null);
+  assert.equal(
+    store.db.prepare("SELECT state FROM jobs WHERE id=?").get(id).state,
+    "complete",
+  );
+  const build = store.claim();
+  assert.equal(build.payload.kind, "playback-build");
+  result = await buildPlayback(store, archive, build);
   const originalHash = result.sha256;
   fs.unlinkSync(source);
   fs.unlinkSync(path.join(root, "derivatives", id + ".mp4"));
@@ -513,6 +521,7 @@ test("transfer verifies real synthetic media and resumes derivative work from pr
   store.db.prepare("UPDATE jobs SET state='queued',next=0 WHERE id=?").run(id);
   result = await transfer(store, archive, store.claim());
   assert.equal(result.sha256, originalHash);
+  result = await buildPlayback(store, archive, store.claim());
   assert.equal(result.derivative.video, id + ".mp4");
   assert.equal(store.jobs()[0].state, "complete");
   assert.equal(store.auditIntegrity().valid, true);

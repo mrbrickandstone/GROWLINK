@@ -49,7 +49,7 @@ function eligible(store, s, keepMs) {
   if (
     store.db
       .prepare(
-        "SELECT 1 FROM jobs WHERE (id=? OR json_extract(payload,'$.segmentId')=?) AND state IN ('queued','running') LIMIT 1",
+        "SELECT 1 FROM jobs WHERE (id=? OR json_extract(payload,'$.segmentId')=?) AND (state='running' OR (state='queued' AND COALESCE(json_extract(payload,'$.kind'),'')!='playback-build')) LIMIT 1",
       )
       .get(s.id, s.id)
   )

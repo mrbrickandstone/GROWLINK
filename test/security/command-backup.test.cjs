@@ -13,6 +13,7 @@ const {
   verifySnapshot,
   readConfig,
   createBackup,
+  inspectDatabase,
 } = require("../../security/server/backup.cjs");
 function setup(t) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "farber-backup-test-"));
@@ -93,6 +94,18 @@ test("online SQLite backup captures consistent WAL state, holds, jobs and matchi
     "evidence-signing.pem",
   ]);
   assert.ok(store.auditIntegrity().valid);
+});
+test("backup verification supports prior and indexed schemas but rejects unexpected or altered indexes", (t) => {
+  const { source, store } = setup(t);
+  assert.equal(inspectDatabase(source).audit.valid, true);
+  store.db.exec("DROP INDEX jobs_ready; DROP INDEX jobs_active_segment");
+  assert.equal(inspectDatabase(source).audit.valid, true);
+  store.db.exec("CREATE INDEX unexpected_index ON jobs(state)");
+  assert.throws(() => inspectDatabase(source), /BACKUP_SCHEMA_UNSUPPORTED/);
+  store.db.exec(
+    "DROP INDEX unexpected_index; CREATE INDEX jobs_ready ON jobs(attempts)",
+  );
+  assert.throws(() => inspectDatabase(source), /BACKUP_SCHEMA_UNSUPPORTED/);
 });
 test("backup rejects missing or wrong signing keys, invalid signatures and broken audit history", async (t) => {
   const { root, source, store } = setup(t),

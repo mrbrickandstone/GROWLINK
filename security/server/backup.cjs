@@ -6,6 +6,7 @@ const { DatabaseSync, backup } = require("node:sqlite");
 const { execFile } = require("node:child_process");
 const { promisify } = require("node:util");
 const { digest, auditIntegrity } = require("./audit.cjs");
+const { QUEUE_INDEXES } = require("./queue-priority.cjs");
 const { hashFile } = require("../../lib/security/ring-pilot.cjs");
 const execute = promisify(execFile);
 const DB = "command.sqlite",
@@ -71,16 +72,28 @@ function inspectDatabase(root) {
     db.exec("PRAGMA trusted_schema=OFF; PRAGMA query_only=ON");
     const schema = db
       .prepare(
-        "SELECT type,name FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%' ORDER BY name",
+        "SELECT type,name,sql FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%' ORDER BY name",
       )
       .all();
     if (
-      JSON.stringify(schema.map((r) => [r.type, r.name])) !==
+      JSON.stringify(
+        schema.filter((r) => r.type === "table").map((r) => [r.type, r.name]),
+      ) !==
       JSON.stringify(
         ["audit", "jobs", "records", "sessions"].map((name) => ["table", name]),
       )
     )
       fail("BACKUP_SCHEMA_UNSUPPORTED");
+    // Old snapshots may have no queue indexes. New snapshots permit only these
+    // exact indexes; extra indexes, triggers and views remain rejected.
+    for (const r of schema.filter((r) => r.type !== "table")) {
+      if (
+        r.type !== "index" ||
+        !QUEUE_INDEXES[r.name] ||
+        r.sql !== QUEUE_INDEXES[r.name]
+      )
+        fail("BACKUP_SCHEMA_UNSUPPORTED");
+    }
     const integrity = db.prepare("PRAGMA integrity_check").all();
     if (integrity.length !== 1 || integrity[0].integrity_check !== "ok")
       fail("BACKUP_DATABASE_CORRUPT");

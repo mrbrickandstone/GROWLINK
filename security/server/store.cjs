@@ -4,6 +4,7 @@ const fs = require("node:fs"),
   crypto = require("node:crypto");
 const { DatabaseSync } = require("node:sqlite");
 const { digest, auditIntegrity } = require("./audit.cjs");
+const { sqlRank, priority, QUEUE_INDEXES } = require("./queue-priority.cjs");
 const { coverage, windowRange } = require("../../lib/security/coverage.cjs");
 const DAY = 86400000,
   ROLES = ["owner", "operator", "technician", "auditor", "inspector"];
@@ -34,6 +35,7 @@ class Store {
     this.db = new DatabaseSync(path.join(this.root, "command.sqlite"));
     fs.chmodSync(path.join(this.root, "command.sqlite"), 0o600);
     this.db.function("audit_hash", digest);
+    this.db.function("job_rank", sqlRank);
     this.db
       .exec(`PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA busy_timeout=3000;
    CREATE TABLE IF NOT EXISTS records(kind TEXT NOT NULL,id TEXT NOT NULL,data TEXT NOT NULL,PRIMARY KEY(kind,id));
@@ -41,6 +43,8 @@ class Store {
    CREATE TABLE IF NOT EXISTS jobs(id TEXT PRIMARY KEY,payload TEXT NOT NULL,state TEXT NOT NULL DEFAULT 'queued',attempts INTEGER NOT NULL DEFAULT 0,owner TEXT,lease INTEGER,next INTEGER NOT NULL DEFAULT 0,error TEXT);
    CREATE TABLE IF NOT EXISTS sessions(id TEXT PRIMARY KEY,data TEXT NOT NULL,expires INTEGER NOT NULL);
   `);
+    for (const sql of Object.values(QUEUE_INDEXES))
+      this.db.exec(sql.replace("CREATE INDEX ", "CREATE INDEX IF NOT EXISTS "));
   }
   close() {
     this.db.close();
@@ -606,12 +610,35 @@ class Store {
   claim() {
     const now = this.now(),
       owner = crypto.randomUUID();
-    const j = this.db
-      .prepare(
-        `UPDATE jobs SET state='running',owner=?,lease=?,attempts=attempts+1 WHERE id=(SELECT j.id FROM jobs j WHERE ((j.state='queued' AND j.next<=?) OR (j.state='running' AND j.lease<=?)) AND NOT EXISTS (SELECT 1 FROM jobs other WHERE other.id!=j.id AND other.state='running' AND other.lease>? AND COALESCE(json_extract(other.payload,'$.segmentId'),other.id)=COALESCE(json_extract(j.payload,'$.segmentId'),j.id)) ORDER BY j.rowid LIMIT 1) RETURNING *`,
-      )
-      .get(owner, now + 600000, now, now, now);
-    return j ? { ...j, payload: JSON.parse(j.payload) } : null;
+    return this.tx(() => {
+      const j = this.db
+        .prepare(
+          `UPDATE jobs SET state='running',owner=?,lease=?,attempts=attempts+1 WHERE id=(
+          SELECT j.id FROM jobs j
+          LEFT JOIN records s ON s.kind='segments' AND s.id=COALESCE(json_extract(j.payload,'$.segmentId'),j.id)
+          LEFT JOIN records c ON c.kind='cameras' AND c.id=json_extract(j.payload,'$.cameraId')
+          WHERE ((j.state='queued' AND j.next<=?) OR (j.state='running' AND j.lease<=?))
+          AND NOT EXISTS (SELECT 1 FROM jobs other WHERE other.id!=j.id AND other.state='running' AND other.lease>? AND COALESCE(json_extract(other.payload,'$.segmentId'),other.id)=COALESCE(json_extract(j.payload,'$.segmentId'),j.id))
+          ORDER BY job_rank(j.payload,s.data,c.data,?), j.rowid LIMIT 1
+        ) RETURNING *`,
+        )
+        .get(owner, now + 600000, now, now, now, now);
+      if (!j) return null;
+      const payload = JSON.parse(j.payload),
+        dispatch = priority(
+          payload,
+          this.get("segments", payload.segmentId || j.id),
+          this.get("cameras", payload.cameraId || ""),
+          now,
+        );
+      this.put("job-dispatch", j.id, {
+        jobId: j.id,
+        at: now,
+        attempt: j.attempts,
+        ...dispatch,
+      });
+      return { ...j, payload };
+    });
   }
   finish(j, state, code = null, nextAt) {
     const r = this.db

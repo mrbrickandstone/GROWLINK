@@ -1,5 +1,6 @@
 "use strict";
 const { coverage } = require("../../lib/security/coverage.cjs");
+const { historyEstimate } = require("./queue-priority.cjs");
 const DAY = 86400000,
   STEP = 299000,
   OVERLAP = 1000,
@@ -154,15 +155,25 @@ function gapSummary(result) {
 function assessPipelines(store) {
   const now = store.now(),
     segments = store.all("segments"),
+    segmentById = new Map(segments.map((s) => [s.id, s])),
     jobs = new Map();
   for (const row of store.db
     .prepare("SELECT id,payload,state FROM jobs WHERE state!='complete'")
     .iterate()) {
     const p = JSON.parse(row.payload);
-    if (!["ring-export", "pilot-import"].includes(p.kind)) continue;
-    const list = jobs.get(p.cameraId) || [];
+    if (
+      ![
+        "ring-export",
+        "pilot-import",
+        "playback-build",
+        "playback-restore",
+      ].includes(p.kind)
+    )
+      continue;
+    const cameraId = p.cameraId || segmentById.get(p.segmentId)?.cameraId;
+    const list = jobs.get(cameraId) || [];
     list.push({ ...p, id: row.id, state: row.state });
-    jobs.set(p.cameraId, list);
+    jobs.set(cameraId, list);
   }
   return store
     .all("cameras")
@@ -191,18 +202,10 @@ function assessPipelines(store) {
           faultCodes: ["PIPELINE_CONFIGURATION_INVALID"],
         };
       }
-      const confirmed =
-        Number.isSafeInteger(c.continuousHistoryDays) &&
-        c.continuousHistoryDays >= 1 &&
-        c.continuousHistoryDays <= ADVERTISED_HISTORY_DAYS &&
-        typeof c.continuousHistoryEvidence === "string" &&
-        !!c.continuousHistoryEvidence.trim();
-      result.sourceHistoryDays = confirmed
-        ? c.continuousHistoryDays
-        : ADVERTISED_HISTORY_DAYS;
-      result.historyBasis = confirmed
-        ? "configured-setting"
-        : "advertised-maximum-only";
+      const history = historyEstimate(c),
+        confirmed = history.basis === "configured-setting";
+      result.sourceHistoryDays = history.days;
+      result.historyBasis = history.basis;
       result.readyThrough = readyThrough(c, now);
       const requests = [
         {
@@ -270,6 +273,8 @@ function assessPipelines(store) {
       const pending = jobs.get(c.id) || [];
       result.jobs = {
         pending: pending.length,
+        originalPending: pending.filter((j) => !j.segmentId).length,
+        playbackPending: pending.filter((j) => !!j.segmentId).length,
         failed: pending.filter((j) => ["blocked", "failed"].includes(j.state))
           .length,
       };
@@ -294,9 +299,15 @@ function assessPipelines(store) {
       const failed = pending.filter((j) =>
         ["blocked", "failed"].includes(j.state),
       );
-      if (failed.some((j) => !valid.some((s) => s.id === j.id)))
+      if (failed.some((j) => !j.segmentId && !valid.some((s) => s.id === j.id)))
         result.faultCodes.push("TRANSFER_FAILED");
-      if (failed.some((j) => valid.some((s) => s.id === j.id && !s.derivative)))
+      if (
+        failed.some((j) =>
+          valid.some(
+            (s) => s.id === (j.segmentId || j.id) && !s.derivative?.video,
+          ),
+        )
+      )
         result.faultCodes.push("PLAYBACK_BACKLOG");
       result.status = result.faultCodes.includes("SOURCE_WINDOW_EXCEEDED")
         ? "outside_window"

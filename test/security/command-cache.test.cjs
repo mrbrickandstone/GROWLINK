@@ -308,6 +308,16 @@ test("maintenance reports failed verification without touching local files", asy
   assert.ok(fs.existsSync(f.cached));
   assert.ok(fs.existsSync(f.playback));
 });
+test("queued background playback cannot trap old verified duplicates during disk pressure, while active encoding blocks eviction", async (t) => {
+  const f = await fixture(t);
+  f.store.enqueue({ kind: "playback-build", segmentId: f.id });
+  const job = f.store.claim();
+  assert.equal((await evict(f.store, f.archive, f.id, config)).removed, 0);
+  f.store.finish(job, "queued", null, 0);
+  assert.equal((await evict(f.store, f.archive, f.id, config)).removed, 2);
+  assert.equal(await f.local.verify(f.s.receipt), true);
+  assert.equal(f.store.jobs()[0].state, "queued");
+});
 test("evicted playback rebuilds from preserved bytes after worker restart without contacting Ring", async (t) => {
   const f = await fixture(t, { video: true });
   await evict(f.store, f.archive, f.id, config);

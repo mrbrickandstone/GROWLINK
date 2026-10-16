@@ -10,7 +10,7 @@ Coverage uses actual verified segment start/end times and a recorded readback ti
 
 - **Originals not yet preserved:** intervals with no verified preserved original, whether local or independent.
 - **Not independently archived:** intervals with no verified independent archive receipt. A local copy does not satisfy this measure.
-- **Pending transfer jobs:** all outstanding media-transfer jobs, including blocked/failed jobs; this is a count of work, not a footage-duration measurement. Failed playback work is identified separately when its original has been preserved.
+- **Pending transfer jobs:** all outstanding media jobs, including blocked/failed jobs; this is a count of work, not a footage-duration measurement. The API also separates original-preservation and playback job counts. Failed playback work has its own fault and does not revoke verified original coverage.
 
 The display reports total missing duration, oldest missing original, job counts, evaluation endpoint and the basis for the source-window estimate. A 33 ms hole remains a hole even when its job is complete. Preserving an original locally removes its upstream-retrieval risk, while the independent-archive backlog remains visible. These statements rely on the last verified receipt; the monitor does not perform a full remote readback every 30 seconds. Startup reconciliation can revoke invalid coverage. Recurring readback cadence and sustained-volume performance still require commissioning.
 
@@ -34,6 +34,25 @@ Each scheduling call admits at most 120 windows per camera. The worker schedules
 
 New scheduling is limited to candidates near Ring's advertised 14-day maximum. When a cursor or initial setup precedes that window, the skipped scheduling interval is recorded in the audit history. Its missing coverage remains visible in monitoring; the cursor is not evidence that those recordings were exported. Existing jobs and evidence are preserved. Changing the configured recording start after a cursor exists requires reviewed migration; the scheduler does not silently reset its obligation. Shorter actual storage settings affect risk warnings but do not turn the maximum scheduling window into a verified availability claim.
 
+## Preservation priority and separate playback jobs
+
+The worker now completes an original-transfer job only after the verified receipt, segment record and a separate background playback job are committed together. A failed database transaction cannot mark the original job complete without its durable follow-up. Retrying an already preserved original verifies its receipt and restores the playback job without asking Ring for a new download. Existing job identities and original bytes are preserved.
+
+Queue selection considers all due jobs, across cameras, in this order:
+
+1. Missing Ring originals still within their **estimated** source window, earliest estimated boundary first. A confirmed camera setting is used when recorded; otherwise the rank explicitly uses the unconfirmed advertised maximum.
+2. Other original preservation, including already queued Ring requests beyond that estimate and local imports. Being beyond an estimate does not delete a job or declare footage irretrievable.
+3. Requested playback/evidence work and follow-up on originals already preserved.
+4. Automatic background playback creation.
+
+The selection is recalculated from current metadata on each claim and saved in `job-dispatch`. Retry deadlines, active leases, same-segment serialization, permission checks and request timestamps are unchanged. Disabling camera exports now blocks an already queued Ring download before any provider request. A claimed operation is not preempted; this ordering does not guarantee deadline completion, user-response latency or unlimited throughput.
+
+Background playback uses a hash-verified managed staging copy where available and otherwise reads the preserved archive. It rechecks the segment and deletion intent before publication. Encoding failures leave the original complete and raise a separate playback fault. New original transfers can run before the next background encoding job. Requested playback still requires current named-user authorization; automatic initial playback creation does not grant anyone access.
+
+When optional cache cleanup is enabled and independently commissioned, a merely queued background playback job does not pin old verified duplicates on a full disk: that job can rebuild from the preserved archive. A running encoder, active holds, recent access and the other safety checks still block eviction. This avoids a capacity deadlock between queued background work and cleanup. Source originals in the archive are unchanged.
+
+Startup still performs archive reconciliation and hold checks before normal dispatch. Those operations, source download/media verification and any operation already running consume time. Sustained catch-up throughput on the Mini, recurring reconciliation scheduling, short-history settings and external notification delivery remain commissioning work. A partial completed export remains a visible gap; priority ordering alone does not discover additional vendor footage or repair that gap.
+
 ## Independent notification path
 
 The worker sends only allowlisted fault codes with its existing authenticated heartbeat. Footage, camera provider IDs and credentials are not included. The independent watchdog evaluates every 30 seconds, detects heartbeat silence after 90 seconds and retries an unaccepted notification every 30 seconds. A new fault code during an open incident creates a persisted notification revision with a new idempotency key; retries of that revision retain the key across restart. A prior accepted notification therefore cannot suppress a newly observed source-window risk. Incident openings, escalations, resolutions and notification outcomes are audited.
@@ -46,4 +65,6 @@ Nine additional tests cover saved scheduling across process/database reopen; tra
 
 Browser verification used synthetic data only: an old 33 ms gap remained at risk despite a completed job; a local-only original showed an independent-archive backlog with no source-expiry risk; new coverage observations cleared those transfer faults; two-minute-old observations became unconfirmed. No warning/error console entries were captured. The first fixture omitted an existing required `requested` field; completing that synthetic record corrected the preview without changing application behavior.
 
-No real notifications or new Ring requests were made. Camera 1's actual history setting remains unconfirmed until supplied by the owner. The Southampton host is still unavailable. Live provider qualification, policy decisions, recurring archive readback, source-priority catch-up under sustained load, verified cache eviction, off-site backup operation, native recorder access and actual notification receipt remain deployment gates. The implementation is not a site commissioning or OCM-compliance declaration.
+Twelve further tests cover cross-camera priority, changed/unconfirmed storage estimates, retry deadlines and lease recovery, receipt validity, selection beyond the UI's 100-job view, atomic original/follow-up publication, independent playback faults, disabled-camera rejection, safe staging reuse, cache admission and old/new backup schema verification. Selection over 5,002 queued synthetic jobs took 19.5 ms in one full-suite run on the development host; this is not a sustained Mini benchmark. An actual synthetic worker was killed during controlled playback encoding after its original transfer completed. Restart with the import source removed and its persisted lease moved to the reclaim boundary rebuilt the derivative from the archive; the original transfer remained at one attempt. No real camera footage or production worker was involved. The full suite passes 112 tests, and the real local restic recovery drill passes with the new indexes.
+
+No real notifications or new Ring requests were made. Camera 1's actual history setting remains unconfirmed until supplied by the owner. The Southampton host is still unavailable. Live provider qualification, policy decisions, recurring archive readback, sustained source-priority catch-up, cache commissioning, off-site backup operation, native recorder access and actual notification receipt remain deployment gates. The implementation is not a site commissioning or OCM-compliance declaration.
