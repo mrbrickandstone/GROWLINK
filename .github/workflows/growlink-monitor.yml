@@ -1,8 +1,6 @@
-name: Collect Growlink observations
+name: Manually verify Growlink collection
 
 on:
-  schedule:
-    - cron: '2-57/5 * * * *'
   workflow_dispatch:
 
 permissions: {}
@@ -62,3 +60,4 @@ jobs:
           if result.get('validData') is not True or result.get('issues', 0):
               sys.exit('Observation saved with unavailable or stale sensor data; review the dashboard.')
           PY
+

@@ -6,7 +6,7 @@ Farber Growlink dashboard for INTERM FLOWERING, recovered from the production Ve
 
 The recovered baseline's nine application files matched the source hashes from deployment `dpl_4Z74CZwMZJahuyYBHuzpZZFb9aRv`. The monitoring branch adds files and updates test/function configuration. This README replaces the deployment README, which could not be retrieved completely.
 
-The dashboard reads live sensor data and history from Growlink and outside temperature observations from NWS station KHWV. It refreshes while the dashboard is open. Background monitoring and email alerts are implemented on this branch but are not active. No equipment-control endpoint is exposed.
+The dashboard reads live sensor data and history from Growlink and outside temperature observations from NWS station KHWV. It refreshes while the dashboard is open. Production background collection is enabled in learning mode. The original GitHub scheduler has multi-hour gaps; this branch replaces it with native five-minute Vercel cron and adds capture-health logs. Deployment is gated on Pro or Enterprise because Hobby does not support subdaily cron. Email alerts remain a separately configured mode. No equipment-control endpoint is exposed.
 
 ## Configuration
 
@@ -18,7 +18,7 @@ Set these environment variables in the Vercel project:
 
 Keep credentials in deployment environment variables. Do not commit secrets or live sensor exports. The browser uses the dashboard password to authenticate to the backend; the Growlink API key stays on the server.
 
-The existing Vercel production deployment has not been changed or connected to this repository as part of the source import.
+The existing production project is `farber-growlink-dashboard` in `marcos-projects-83f88565`, connected to this repository. This scheduler change is not active until deployed to that project on a supported plan.
 
 ## Validation
 
@@ -26,4 +26,5 @@ Run `npm test` with Node.js 22 or newer. The recovered package has no third-part
 
 ## Next work
 
-The monitoring branch adds a read-only monitor with persistent incident state, bounded snapshots, and email delivery. See [MONITOR_SETUP.md](MONITOR_SETUP.md) for activation requirements. It is disabled by default and not deployed. Camera access will follow after Growlink monitoring is working.
+See [MONITOR_SETUP.md](MONITOR_SETUP.md) for the scheduler release gate and live verification requirements. Existing baseline records are preserved; previous gaps remain gaps. No AI training or automatic recommendations are implemented by this collector.
+
