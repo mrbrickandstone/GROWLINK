@@ -1,1 +1,14 @@
-{"name":"farber-growlink-dashboard","version":"1.0.0","private":true,"scripts":{"test":"node --test test.cjs monitor.test.cjs ring.test.cjs"},"engines":{"node":">=22"}}
+{
+  "name": "farber-growlink-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "node --test test.cjs monitor.test.cjs ring.test.cjs learning.test.cjs learning-dom.test.cjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "jsdom": "30.1.3"
+  }
+}

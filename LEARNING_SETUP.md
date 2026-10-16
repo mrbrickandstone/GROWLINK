@@ -1,0 +1,21 @@
+# Baseline, analysis and irrigation events
+
+The existing five-minute production monitor starts a separate seven-day v2 baseline on its first complete, fresh capture after deployment. The earlier v1 state, baseline and rolling observations are copied once to a separate persistent archive. Existing keys are not deleted. No user credential, equipment setting, target range, email recipient or AI service is changed.
+
+The new baseline counts unique five-minute capture buckets. It records completeness, the last fresh capture and the longest interval between captures. Its seven-day records freeze at the end of the window; rolling collection continues. The dashboard reports elapsed time and coverage separately, and shows collection as stale after ten minutes without a complete capture. The sampling repair does not recover old missing readings.
+
+A daily descriptive report is saved on the first monitor capture after 7 a.m. America/New_York, once per local calendar date. The first deployment-day report is created immediately after a fresh capture if that hour has passed. Each report summarizes the trailing 24 hours, including archived legacy samples where available; that does not increase the new baseline's coverage. Reports expire after 90 days; the latest report, baseline and earlier archive remain stored. Rolling v2 samples are bounded to approximately 30 days. Manual event records are retained; the UI shows the latest 100 within 30 days.
+
+The report computes coverage, recorded min/max/sample mean, room readings by scheduled light phase, simultaneous between-probe moisture differences, EC endpoints and continuous lights-off moisture changes. It breaks drying segments at gaps over ten minutes. A moisture rise of at least 0.5 points between adjacent captures is an unconfirmed rise, not an inferred watering event or agronomic target. Event responses require nearby before/after readings and remain associations, not causal findings. Missing readings are never interpolated. Raw substrate EC is not converted to pore-water or feed EC.
+
+“Analyze latest readings” computes an on-demand current view without overwriting the saved daily report. Both display their generation time, limitations and data-coverage status. Readiness labels require 48 hours before preliminary comparisons and flag coverage below 90%; these are software evidence thresholds, not crop targets or proof of a complete week. The seven-day baseline must still be reviewed before recommendations. No AI model training, generated prescriptions, alerts or automatic equipment control are added.
+
+Log an irrigation or change event after connecting with the dashboard password. Choose the event time, whole-room or probe-area scope, optional duration in seconds, measured applied/runoff totals in liters, feed EC in mS/cm, and notes. Unknown quantities stay blank. The entry time uses the browser device's displayed timezone and is saved in UTC; reports show New York time. Describe each room/feed/lighting change in notes. Events are append-only. If a correction is needed, add a change entry identifying the earlier event/time rather than silently rewriting history.
+
+The authenticated `/api/learning` endpoint serves status and reports. POST accepts same-origin JSON event entries only. Stable event IDs make unchanged retries idempotent; conflicting reuse returns HTTP 409. Secrets stay server-side. Test-only records must not be inserted into production to demonstrate the form.
+
+## Validation
+
+Run `npm test`. DOM interaction tests use jsdom with synthetic readings. Optional Redis/Lua contract tests use `python3` and `fakeredis[lua]` (install in a development environment); without those packages the contract tests are explicitly skipped. The release checks ran those tests with Lua enabled, including duplicate capture/event retries, legacy preservation, baseline freeze and the actual monitor-to-report path. No live credentials are needed for tests.
+
+After production deployment, inspect a native `growlink_capture` event with `baselineVersion: 2`, a new start/end time, and a successful report save. Check the next native capture for advancing fresh counts without another reset. The report log contains coverage/count metadata only; the full report remains behind dashboard authentication.

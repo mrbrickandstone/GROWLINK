@@ -18,7 +18,9 @@ module.exports = async (req, res) => {
       issues: result.issues, captures: result.learning?.captures,
       completeCaptures: result.learning?.completeCaptures,
       longestGapMs: result.learning?.longestGapMs,
-      windowElapsed: result.learning?.windowElapsed }));
+      windowElapsed: result.learning?.windowElapsed, baselineVersion: result.learning?.version,
+      baselineStartedAt: result.learning?.startedAt, baselineEndsAt: result.learning?.endsAt,
+      legacyArchived: result.learning?.startedAt ? true : undefined, report: result.report }));
     return res.status(200).json({ enabled: true, ...result });
   } catch {
     // Do not expose provider bodies, recipient addresses, or tokens through this endpoint.

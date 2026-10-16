@@ -2,7 +2,11 @@
 
 Status checked October 16, 2026: production collection is enabled in learning mode. Its latest verified GitHub run at 12:16 UTC saved baseline capture 31, with 31 complete captures and a longest gap of 33,947,489 ms. The nominal five-minute GitHub schedule is not meeting the intended cadence. This change replaces it with a native Vercel five-minute cron; activation requires a plan supporting subdaily cron (Pro or Enterprise). Do not merge or deploy this configuration on Hobby. The recipient is supplied privately through `ALERT_TO`; no personal email is stored in source.
 
-## First observation week
+## Current baseline and reports
+
+The learning/report release starts a separate fresh seven-day v2 baseline after the schedule repair, archives the earlier observations once, and retains the old keys. See [LEARNING_SETUP.md](LEARNING_SETUP.md) for the current data model, daily reports and irrigation-event log. The original v1 observation implementation below is historical; its clock and 30-day expiration do not govern the new baseline.
+
+## Original first observation week (v1)
 
 The initial mode is `MONITOR_MODE=learn`. In this mode, only Growlink, Redis, and cron authentication are required; Resend and email variables can be added later. No alerts or recommendations are sent and no controller settings are changed. `MONITOR_ENABLED=true` is still required to start capture.
 
