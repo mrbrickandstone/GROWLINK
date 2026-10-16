@@ -420,7 +420,18 @@ async function execute() {
     await startWeb(port);
     assert.equal((await principal()).user.id, p.user.id);
     assert.equal((await request("/api/overview")).status, 200);
-    clock += 3600001;
+    const expires = store.db
+      .prepare("SELECT expires FROM sessions WHERE id=?")
+      .get(digest(sid)).expires;
+    const claims = JSON.parse(
+      Buffer.from(issuedTokens.at(-1).split(".")[1], "base64url"),
+    );
+    assert.equal(expires, claims.exp * 1000);
+    // The issuer mints using wall time; setup can cross a second boundary.
+    // Exercise the actual persisted/token expiry, not test-start + one hour.
+    clock = expires - 1;
+    assert.equal((await principal()).user.id, p.user.id);
+    clock = expires;
     assert.equal((await principal()).user, null);
     assert.equal((await request("/api/overview")).status, 401);
   } else if (scenario === "inspector") {

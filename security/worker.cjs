@@ -177,6 +177,13 @@ for (const s of ["SIGTERM", "SIGINT"])
       try {
         activeJob = job;
         await reconcileHolds(store, archive);
+        if (
+          !ring &&
+          job.payload.kind === "ring-export" &&
+          !store.recoveryPending() &&
+          store.get("policy", "ring")?.automatedExportsApproved
+        )
+          ring = require("../lib/ring.cjs").client(process.env);
         if (job.payload.kind === "archive-verify")
           await processVerification(store, archive, job);
         else if (job.payload.kind === "evidence-export")

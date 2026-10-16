@@ -129,12 +129,21 @@ async function prepareRecovery(
         id: key,
         value,
       });
-    if (
-      db
-        .prepare("SELECT 1 FROM records WHERE kind='recovery' AND id='control'")
-        .get()
-    )
-      fail("NESTED_RECOVERY_REQUIRES_REVIEW");
+    const previousRecoveryRow = db
+      .prepare(
+        "SELECT data FROM records WHERE kind='recovery' AND id='control'",
+      )
+      .get();
+    const previousRecovery =
+      previousRecoveryRow && JSON.parse(previousRecoveryRow.data);
+    if (previousRecovery) {
+      if (
+        previousRecovery.state !== "released" ||
+        !previousRecovery.activation?.planId
+      )
+        fail("NESTED_RECOVERY_REQUIRES_REVIEW");
+      history("recovery", "control", previousRecovery);
+    }
     for (const row of db.prepare("SELECT * FROM records").all()) {
       const value = JSON.parse(row.data),
         next = { ...value };
@@ -155,7 +164,8 @@ async function prepareRecovery(
           counts.grantsRevoked++;
           break;
         case "exports":
-          next.recoveryPreviousState = value.state;
+          next.recoveryPreviousState =
+            value.recoveryPreviousState || value.state;
           next.state = "recovery-suspended";
           next.recoverySuspendedAt = at;
           counts.exportsSuspended++;
@@ -211,7 +221,9 @@ async function prepareRecovery(
     }
     counts.sessionsRevoked = db.prepare("DELETE FROM sessions").run().changes;
     for (const job of db
-      .prepare("SELECT * FROM jobs WHERE state!='complete'")
+      .prepare(
+        "SELECT * FROM jobs WHERE state NOT IN ('complete','recovery-retired')",
+      )
       .all()) {
       history("jobs", job.id, { ...job, payload: JSON.parse(job.payload) });
       db.prepare(
@@ -233,6 +245,7 @@ async function prepareRecovery(
       newestSnapshotVerified: false,
       postSnapshotChangesReconciled: false,
       productionReady: false,
+      previousRecoveryId: previousRecovery?.id || null,
     };
     save("recovery", "control", recovery);
     const previous =

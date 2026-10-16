@@ -33,6 +33,8 @@ let session,
   selected = "ring-1",
   currentTimeline,
   playbackPoll = 0,
+  recoveryStatus,
+  recoveryPlan,
   exportResult;
 const titles = {
   overview: "Security overview",
@@ -41,6 +43,7 @@ const titles = {
   access: "Inspector access requests",
   records: "Inspections & backup power",
   audit: "Audit history",
+  recoveryReview: "Return to service",
 };
 async function api(url, body) {
   const r = await fetch(url, {
@@ -80,6 +83,7 @@ function allowed(action) {
     grant: ["owner"],
     record: ["owner", "operator", "technician"],
     delete: ["owner"],
+    recovery: ["owner"],
   };
   return map[action]?.includes(u.role);
 }
@@ -236,9 +240,50 @@ function records() {
 function audit() {
   return `<section class="panel"><h2>Audit integrity</h2><p>${data.auditIntegrity?.valid ? "Local audit chain verified." : "Audit chain needs attention."} Independent audit checkpoint: ${esc(data.auditIntegrity?.externalCheckpoint || "unavailable")}. A local hash chain alone cannot prevent privileged rewriting.</p><p class="mono">Head: ${esc(data.auditIntegrity?.head || "—")}</p></section><section class="panel"><h2>Named actions & access history</h2>${data.audit.length ? `<div class="table-wrap"><table><thead><tr><th>Time (New York)</th><th>Actor</th><th>Action</th><th>Detail</th></tr></thead><tbody>${data.audit.map((r) => `<tr><td>${date(r.event.at)}</td><td>${esc(r.event.actor)}</td><td>${esc(r.event.action)}</td><td class="mono">${esc(JSON.stringify(r.event.detail))}</td></tr>`).join("")}</tbody></table></div>` : "<p>Detailed audit history requires an owner or auditor role.</p>"}</section>`;
 }
+function recoveryReview() {
+  if (!allowed("recovery"))
+    return '<section class="panel"><h2>Named owner required</h2><p>Recovery activation requires a provisioned owner with MFA and access to all cameras.</p></section>';
+  if (!recoveryStatus)
+    return '<section class="panel">Loading recovery review…</section>';
+  const r = recoveryStatus;
+  if (!r.pending)
+    return `<section class="panel"><h2>Recovery guard released</h2><p>Restart the worker using the reviewed configuration. Old grants and evidence requests remain invalidated. Source configuration and commissioning still govern operation.</p><p>${r.activation?.counts.resumed || 0} jobs resumed · ${r.activation?.counts.stillPaused || 0} jobs remain paused · ${r.activation?.exceptionCount || 0} original-copy exceptions recorded.</p><p>No OCM compliance or full recovery claim is made.</p></section>`;
+  const labels = {
+    checkpoint: "Newest trusted checkpoint and independent custody",
+    changesAndHolds: "Post-backup changes and complete active hold register",
+    identities: "Named identities, permissions and recovered credentials",
+    sourcePolicy: "Recording source, retention and inspector policy decisions",
+    hostAndStorage: "Recovery host, archive and backup tests",
+    notificationReceipt:
+      "Independent failure test and actual recipient receipt",
+  };
+  const exceptions = r.segments.filter((s) => s.exceptionRequired);
+  let html = `<section class="panel"><h2>Reconcile before activation</h2><p>Stop the worker after archive readback, restore all known changes and active holds from independent records, and revalidate configuration. The server invalidates a review when control data or the queue changes.</p><p>Backup: ${date(r.sourceCreatedAt)} · ${r.activeHolds} active holds · ${r.segments.length} original records · ${exceptions.length} unverified or local-only copies.</p><p>${esc(r.limitations)}</p></section>`;
+  if (exceptions.length)
+    html += `<section class="panel"><h2>Original-copy exceptions</h2><p>These copies do not have fresh independent readback. Acknowledgment does not fill gaps or establish retention.</p><div class="table-wrap"><table><thead><tr><th>Camera / segment</th><th>Footage window</th><th>Finding</th></tr></thead><tbody>${exceptions.map((s) => `<tr><td>${esc(s.cameraId)}<br><span class="mono">${esc(s.id)}</span></td><td>${date(s.start)} → ${date(s.end)}</td><td>${esc(s.readback)} · ${s.independent ? "independent destination" : "local-only or unknown destination"}</td></tr>`).join("")}</tbody></table></div></section>`;
+  html += `<section class="panel"><h2>Unfinished jobs</h2>${r.jobs.length ? r.jobs.map((j) => `<p><span class="mono">${esc(j.id)}</span><br>${esc(j.kind)} · ${esc(j.action.replaceAll("-", " "))}</p>`).join("") : "<p>No paused jobs.</p>"}<p>Only reconfigured Ring transfers and verified playback builds resume. Old evidence and user playback requests require fresh requests; other jobs stay paused.</p></section>`;
+  if (recoveryPlan)
+    return (
+      html +
+      `<section class="panel"><h2>Review ready for activation</h2><p>Expires ${date(recoveryPlan.expiresAt)}. The same named owner must activate this exact review.</p>${Object.entries(
+        recoveryPlan.references,
+      )
+        .map(([k, v]) => `<p><strong>${esc(labels[k])}:</strong> ${esc(v)}</p>`)
+        .join(
+          "",
+        )}<p>${recoveryPlan.exceptions.length} original-copy exceptions · ${recoveryPlan.controlDataLoss ? "Control-data loss interval recorded" : "No control-data loss interval declared"}.</p><form data-form="recovery-activate"><label>Type ACTIVATE RECOVERY to release the guard<input name="confirmation" required autocomplete="off"></label><button>Activate reviewed recovery</button></form><button class="secondary" id="recoveryEdit">Revise review</button></section>`
+    );
+  return (
+    html +
+    `<section class="panel"><h2>Record the owner's review</h2><p>Use references to the reviewed records. Do not enter passwords, tokens or keys. If holds since the backup remain unknown, keep recovery paused.</p><form data-form="recovery-review"><div class="form-grid">${r.referenceFields.map((k) => `<label>${esc(labels[k])}<input name="${esc(k)}" required maxlength="500"></label>`).join("")}<label class="wide"><span><input name="reconciled" type="checkbox" required> I reconciled post-backup changes and the complete active hold register against independent records, revalidated access and configuration, and reviewed every job and exception shown.</span></label>${exceptions.length ? '<label class="wide">Incident record covering every original-copy exception above<input name="exceptionReference" required maxlength="500"></label><label class="wide"><span><input name="acceptExceptions" type="checkbox" required> I reviewed these exact exceptions and authorize return to service with them still disclosed.</span></label>' : ""}<label class="wide"><span><input name="hasControlDataLoss" type="checkbox"> A known control-data loss interval remains documented (active holds must still be reconciled)</span></label><label>Loss begins (UTC)<input name="lossStart" type="datetime-local" step="1"></label><label>Loss ends (UTC)<input name="lossEnd" type="datetime-local" step="1"></label><label class="wide">Control-data loss incident reference<input name="lossReference" maxlength="500"></label></div><button>Prepare activation review</button></form></section>`
+  );
+}
 async function render() {
   if (!data) return;
   $("#recovery").hidden = !data.recovery?.pending;
+  $("#recoveryNav").hidden = !allowed("recovery") || !data.recovery?.prepared;
+  if (view === "recoveryReview" && allowed("recovery"))
+    recoveryStatus = await api("/api/recovery");
   playbackPoll++;
   $("#pageTitle").textContent = titles[view];
   document.querySelectorAll("nav button").forEach((b) => {
@@ -252,6 +297,7 @@ async function render() {
     access,
     records,
     audit,
+    recoveryReview,
   }[view]();
   if (view === "playback") await loadTimeline();
   if (view === "evidence" && exportResult) showExport();
@@ -398,6 +444,10 @@ document.addEventListener("click", async (e) => {
       await api("/api/deletions/approve", { id: b.dataset.approveDelete });
       await reload();
     }
+    if (b.id === "recoveryEdit") {
+      recoveryPlan = null;
+      await render();
+    }
   } catch (err) {
     fail(err);
   }
@@ -415,6 +465,32 @@ document.addEventListener("submit", async (e) => {
     for (const k of ["start", "end", "performedAt", "expiresAt"])
       if (v[k]) v[k] = ms(v[k]);
     let endpoint;
+    if (kind === "recovery-review") {
+      const input = {
+        references: Object.fromEntries(
+          recoveryStatus.referenceFields.map((k) => [k, v[k]]),
+        ),
+        reconciled: f.elements.reconciled.checked,
+        acceptExceptions: f.elements.acceptExceptions?.checked === true,
+        exceptionReference: v.exceptionReference,
+      };
+      if (f.elements.hasControlDataLoss.checked)
+        input.controlDataLoss = {
+          start: ms(v.lossStart),
+          end: ms(v.lossEnd),
+          incidentReference: v.lossReference,
+        };
+      recoveryPlan = await api("/api/recovery/review", input);
+      return await render();
+    }
+    if (kind === "recovery-activate") {
+      await api("/api/recovery/activate", {
+        planId: recoveryPlan.id,
+        confirmation: v.confirmation,
+      });
+      recoveryPlan = null;
+      return await reload();
+    }
     if (kind === "mapping") endpoint = "/api/cameras";
     if (kind === "hold") {
       endpoint = "/api/holds";
@@ -457,6 +533,8 @@ document.addEventListener("submit", async (e) => {
           power: "record",
           delete: "delete",
           export: "export",
+          "recovery-review": "recovery",
+          "recovery-activate": "recovery",
         }[f.dataset.form],
       );
   }
@@ -466,6 +544,8 @@ $("#signOut").onclick = async () => {
   try {
     await api("/api/logout", {});
     data = null;
+    recoveryPlan = null;
+    recoveryStatus = null;
     await reload();
   } catch (e) {
     fail(e);

@@ -7,6 +7,7 @@ const { Transform } = require("node:stream");
 const { createAuth } = require("./auth.cjs");
 const { error } = require("./store.cjs");
 const { queueEvidence } = require("./evidence.cjs");
+const recoveryActivation = require("./recovery-activation.cjs");
 const PUBLIC = path.resolve(__dirname, "../public");
 function json(res, status, value) {
   res.writeHead(status, { "Content-Type": "application/json" });
@@ -156,6 +157,8 @@ function createServer({
         store.audit(actor, "session.ended", {});
         return json(res, 200, { ok: true });
       }
+      if (route === "/api/recovery" && req.method === "GET")
+        return json(res, 200, recoveryActivation.status(store, actor));
       if (route === "/api/overview" && req.method === "GET") {
         const cameras = store
             .visibleCameras(actor)
@@ -164,7 +167,10 @@ function createServer({
           inspector = actor.role === "inspector";
         return json(res, 200, {
           cameras,
-          recovery: { pending: store.recoveryPending() },
+          recovery: {
+            pending: store.recoveryPending(),
+            prepared: !!store.get("recovery", "control"),
+          },
           holds: inspector
             ? []
             : store.all("holds").filter((h) => ids.includes(h.cameraId)),
@@ -431,7 +437,11 @@ function createServer({
       if (req.method === "POST") {
         const input = await body(req);
         let value;
-        if (route === "/api/playback/prepare") {
+        if (route === "/api/recovery/review")
+          value = recoveryActivation.review(store, actor, input);
+        else if (route === "/api/recovery/activate")
+          value = recoveryActivation.activate(store, actor, input);
+        else if (route === "/api/playback/prepare") {
           value = require("./playback.cjs").queuePlayback(
             store,
             actor,
