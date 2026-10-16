@@ -60,8 +60,11 @@ function priority(payload, segment, camera, now) {
         order = deadline;
       } else reason = "original-beyond-estimated-source-window";
     }
-  } else if (payload.kind === "playback-build") {
+  } else if (payload.kind === "archive-verify") {
     tier = 3;
+    reason = "scheduled-archive-readback";
+  } else if (payload.kind === "playback-build") {
+    tier = 4;
     reason = "background-playback";
   }
   // This rank is only queue ordering. It neither proves availability nor changes

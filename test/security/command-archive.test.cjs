@@ -21,6 +21,34 @@ function fixture(t) {
   t.after(() => archive.client.destroy());
   return { archive, bytes, file, sha };
 }
+test("S3 readback pins the receipt version and distinguishes missing objects from denied or unavailable reads", async (t) => {
+  const { archive, bytes, sha } = fixture(t);
+  const receipt = {
+    objectKey: `originals/${sha.slice(0, 2)}/${sha}.mp4`,
+    versionId: "pinned",
+    sha256: sha,
+    size: bytes.length,
+  };
+  for (const status of [200, 403, 404, 503]) {
+    archive.client.send = async (command, options) => {
+      assert.equal(command.constructor.name, "GetObjectCommand");
+      assert.equal(command.input.VersionId, "pinned");
+      assert.ok(options.abortSignal instanceof AbortSignal);
+      if (status !== 200)
+        throw {
+          message: "PRIVATE_PROVIDER_DETAIL",
+          $metadata: { httpStatusCode: status },
+        };
+      return { Body: Readable.from([bytes]) };
+    };
+    const result = await archive.inspect(receipt);
+    assert.equal(
+      result.state,
+      status === 200 ? "verified" : status === 404 ? "missing" : "unavailable",
+    );
+    assert.equal(JSON.stringify(result).includes("PRIVATE"), false);
+  }
+});
 test("S3 contract pins versions, verifies full bytes, extends retention, and confirms holds/deletion", async (t) => {
   const { archive, bytes, file, sha } = fixture(t);
   let head = null,

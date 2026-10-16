@@ -209,6 +209,8 @@ class Store {
       });
   }
   cameraStatus(actor, c) {
+    const readback =
+      actor.role === "inspector" ? null : this.get("verification-health", c.id);
     const seg = this.all("segments")
       .filter((s) => s.cameraId === c.id && s.verified && !s.deletedAt)
       .filter((s) => {
@@ -281,10 +283,21 @@ class Store {
       },
       capture: { ...capture, observedAt: newest || null },
       archive: {
-        state: archived.length ? "degraded" : "unknown",
-        detail: archived.length
-          ? "Verified objects exist; full continuity not commissioned"
-          : "Independent archive not verified",
+        state: readback?.failed
+          ? "failed"
+          : readback?.overdue
+            ? "degraded"
+            : archived.length
+              ? "degraded"
+              : "unknown",
+        detail: readback?.failed
+          ? `${readback.missing} missing, ${readback.mismatch} mismatched, ${readback.unavailable} unreadable archive copies; affected coverage is unverified`
+          : readback?.overdue
+            ? "Scheduled full-byte archive checks are overdue"
+            : archived.length
+              ? "Verified objects exist; full continuity not commissioned"
+              : "Independent archive not verified",
+        ...(readback ? { readback } : {}),
       },
       retention: {
         state: required.gaps.length ? "degraded" : "verified",
@@ -607,7 +620,7 @@ class Store {
       return false;
     }
   }
-  claim() {
+  claim({ verificationOnly = false } = {}) {
     const now = this.now(),
       owner = crypto.randomUUID();
     return this.tx(() => {
@@ -618,11 +631,12 @@ class Store {
           LEFT JOIN records s ON s.kind='segments' AND s.id=COALESCE(json_extract(j.payload,'$.segmentId'),j.id)
           LEFT JOIN records c ON c.kind='cameras' AND c.id=json_extract(j.payload,'$.cameraId')
           WHERE ((j.state='queued' AND j.next<=?) OR (j.state='running' AND j.lease<=?))
+          AND (?=0 OR json_extract(j.payload,'$.kind')='archive-verify')
           AND NOT EXISTS (SELECT 1 FROM jobs other WHERE other.id!=j.id AND other.state='running' AND other.lease>? AND COALESCE(json_extract(other.payload,'$.segmentId'),other.id)=COALESCE(json_extract(j.payload,'$.segmentId'),j.id))
           ORDER BY job_rank(j.payload,s.data,c.data,?), j.rowid LIMIT 1
         ) RETURNING *`,
         )
-        .get(owner, now + 600000, now, now, now, now);
+        .get(owner, now + 600000, now, now, verificationOnly ? 1 : 0, now, now);
       if (!j) return null;
       const payload = JSON.parse(j.payload),
         dispatch = priority(

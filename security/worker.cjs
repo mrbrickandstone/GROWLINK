@@ -11,6 +11,13 @@ const {
 } = require("./server/cache.cjs");
 const cacheConfig = cacheOptions(process.env);
 const {
+  options: verificationOptions,
+  scheduleVerification,
+  processVerification,
+  observeVerification,
+} = require("./server/reconciliation.cjs");
+const verificationConfig = verificationOptions(process.env);
+const {
   DiskGuard,
   JOB_HEADROOM,
   capacityError,
@@ -18,7 +25,6 @@ const {
 const {
   transfer,
   buildPlayback,
-  reconcile,
   reconcileHolds,
   scheduleRing,
 } = require("./server/transfer.cjs");
@@ -40,6 +46,14 @@ async function beat() {
   const capacity = disk.inspect(activeJob ? 0 : JOB_HEADROOM);
   const faultCodes = [];
   if (cacheFault) faultCodes.push("CACHE_MAINTENANCE_FAILED");
+  try {
+    if (!stopped) scheduleVerification(store, verificationConfig);
+    faultCodes.push(
+      ...observeVerification(store, verificationConfig).faultCodes,
+    );
+  } catch {
+    faultCodes.push("ARCHIVE_VERIFICATION_SCHEDULER_FAILED");
+  }
   if (capacity.code) faultCodes.push(capacity.code);
   if (!capacity.paused && !stopped) {
     try {
@@ -59,11 +73,18 @@ async function beat() {
     )
     .all();
   const failures = failureRows.length,
+    verificationFailures = failureRows.filter(
+      (r) => r.kind === "archive-verify",
+    ).length,
     playbackFailures = failureRows.filter((r) =>
       ["playback-build", "playback-restore"].includes(r.kind),
     ).length;
   if (playbackFailures) faultCodes.push("PLAYBACK_BACKLOG");
-  if (failures > playbackFailures || (lastError && !playbackFailures))
+  if (verificationFailures) faultCodes.push("ARCHIVE_READBACK_FAILED");
+  if (
+    failures > playbackFailures + verificationFailures ||
+    (lastError && !playbackFailures && !verificationFailures)
+  )
     faultCodes.push("TRANSFER_FAILED");
   const detail = {
     status:
@@ -135,7 +156,6 @@ for (const s of ["SIGTERM", "SIGINT"])
 (async () => {
   await beat();
   reconcileCacheState(store);
-  await reconcile(store, archive);
   await beat();
   let ring;
   if (store.get("policy", "ring")?.automatedExportsApproved)
@@ -146,13 +166,16 @@ for (const s of ["SIGTERM", "SIGINT"])
     let job;
     while (
       !stopped &&
-      !disk.inspect(JOB_HEADROOM).paused &&
-      (job = store.claim())
+      (job = store.claim({
+        verificationOnly: disk.inspect(JOB_HEADROOM).paused,
+      }))
     ) {
       try {
         activeJob = job;
         await reconcileHolds(store, archive);
-        if (job.payload.kind === "evidence-export")
+        if (job.payload.kind === "archive-verify")
+          await processVerification(store, archive, job);
+        else if (job.payload.kind === "evidence-export")
           await require("./server/evidence.cjs").processEvidence(
             store,
             archive,

@@ -6,6 +6,60 @@ const { pipeline } = require("node:stream/promises");
 const { Transform } = require("node:stream");
 const { hashFile } = require("../../lib/security/ring-pilot.cjs");
 const { error } = require("./store.cjs");
+async function inspectBytes(read, r, { timeoutMs = 120000 } = {}) {
+  const checkedAt = Date.now();
+  if (
+    !r ||
+    !/^[a-f0-9]{64}$/.test(r.sha256 || "") ||
+    !Number.isSafeInteger(r.size) ||
+    r.size < 1
+  )
+    return { state: "unavailable", code: "ARCHIVE_RECEIPT_INVALID", checkedAt };
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  timer.unref();
+  let stream, onAbort;
+  try {
+    stream = await read(r, { signal: controller.signal });
+    onAbort = () => stream.destroy?.(error("ARCHIVE_READBACK_TIMEOUT", 503));
+    controller.signal.addEventListener("abort", onAbort, { once: true });
+    if (controller.signal.aborted) throw error("ARCHIVE_READBACK_TIMEOUT", 503);
+    const h = crypto.createHash("sha256");
+    let bytes = 0;
+    for await (const c of stream) {
+      bytes += c.length;
+      if (bytes > r.size)
+        return {
+          state: "mismatch",
+          code: "ARCHIVE_SIZE_MISMATCH",
+          checkedAt: Date.now(),
+        };
+      h.update(c);
+    }
+    return bytes === r.size && h.digest("hex") === r.sha256
+      ? { state: "verified", code: null, checkedAt: Date.now() }
+      : {
+          state: "mismatch",
+          code: "ARCHIVE_READBACK_MISMATCH",
+          checkedAt: Date.now(),
+        };
+  } catch (e) {
+    const missing = e.code === "ENOENT" || e.$metadata?.httpStatusCode === 404;
+    return {
+      state: missing ? "missing" : "unavailable",
+      code: missing
+        ? "ARCHIVE_OBJECT_MISSING"
+        : controller.signal.aborted
+          ? "ARCHIVE_READBACK_TIMEOUT"
+          : "ARCHIVE_READBACK_UNAVAILABLE",
+      checkedAt: Date.now(),
+    };
+  } finally {
+    clearTimeout(timer);
+    if (onAbort) controller.signal.removeEventListener("abort", onAbort);
+    stream?.destroy?.();
+  }
+}
 function keyFor(sha) {
   if (!/^[a-f0-9]{64}$/.test(sha)) throw error("INVALID_HASH");
   return `originals/${sha.slice(0, 2)}/${sha}.mp4`;
@@ -73,17 +127,13 @@ class LocalArchive {
     }
   }
   async verify(r) {
-    try {
-      return (
-        fs.statSync(this.file(r.objectKey)).size === r.size &&
-        (await hashFile(this.file(r.objectKey))) === r.sha256
-      );
-    } catch {
-      return false;
-    }
+    return (await this.inspect(r)).state === "verified";
   }
-  async read(r) {
-    return fs.createReadStream(this.file(r.objectKey));
+  async inspect(r, options) {
+    return inspectBytes(this.read.bind(this), r, options);
+  }
+  async read(r, { signal } = {}) {
+    return fs.createReadStream(this.file(r.objectKey), { signal });
   }
   async setHold() {
     throw error("INDEPENDENT_OBJECT_HOLD_NOT_CONFIGURED", 409);
@@ -219,28 +269,22 @@ class S3Archive {
     r.readbackVerifiedAt = Date.now();
     return r;
   }
-  async read(r) {
+  async read(r, { signal } = {}) {
     const out = await this.client.send(
       new this.sdk.GetObjectCommand({
         Bucket: this.bucket,
         Key: r.objectKey,
         VersionId: r.versionId,
       }),
+      { abortSignal: signal },
     );
     return out.Body;
   }
   async verify(r) {
-    try {
-      const h = crypto.createHash("sha256");
-      let n = 0;
-      for await (const c of await this.read(r)) {
-        n += c.length;
-        h.update(c);
-      }
-      return n === r.size && h.digest("hex") === r.sha256;
-    } catch {
-      return false;
-    }
+    return (await this.inspect(r)).state === "verified";
+  }
+  async inspect(r, options) {
+    return inspectBytes(this.read.bind(this), r, options);
   }
   async setHold(r) {
     await this.client.send(
@@ -319,4 +363,4 @@ function archiveFor(env, root) {
     ? new S3Archive(env)
     : new LocalArchive(path.join(root, "archive"));
 }
-module.exports = { LocalArchive, S3Archive, archiveFor, keyFor };
+module.exports = { LocalArchive, S3Archive, archiveFor, keyFor, inspectBytes };

@@ -228,7 +228,11 @@ test("archive upload is idempotent, readback detects tampering and reconciliatio
     store.timeline(operator, "one", store.now() - 3000, store.now()).coveredMs,
     0,
   );
-  assert.equal(store.jobs()[0].state, "queued");
+  assert.equal(
+    store.jobs()[0].state,
+    "complete",
+    "failed archive readback must not automatically repeat the original source export",
+  );
 });
 test("signed evidence manifests disclose gaps and native-authentication limits, and reject changed originals", async (t) => {
   const { store, root } = setup(t);

@@ -8,6 +8,53 @@ const { test } = require("node:test"),
 const { Store } = require("../../security/server/store.cjs");
 const { LocalArchive } = require("../../security/server/archive.cjs");
 const { createServer } = require("../../security/server/http.cjs");
+test("failed archive readback reaches scoped dashboard status and removes playback coverage until verified recovery", async (t) => {
+  const f = await fixture(t);
+  const {
+    inspectSegment,
+    observeVerification,
+  } = require("../../security/server/reconciliation.cjs");
+  const segment = f.store.get("segments", f.id);
+  f.owner.cameraIds = ["one"];
+  fs.writeFileSync(f.archive.file(segment.receipt.objectKey), "changed");
+  await inspectSegment(f.store, f.archive, f.id);
+  observeVerification(f.store);
+  let overview = await (await f.call("/api/overview")).json();
+  assert.equal(overview.cameras.length, 1);
+  assert.equal(overview.cameras[0].archive.state, "failed");
+  assert.equal(overview.cameras[0].archive.readback.mismatch, 1);
+  let timeline = await (
+    await f.call("/api/timeline?camera=one&start=100&end=200")
+  ).json();
+  assert.equal(timeline.coveredMs, 0);
+  assert.equal(timeline.gaps.length, 1);
+  assert.equal((await f.call(`/api/media/${f.id}/playback`)).status, 404);
+  f.store.grant(f.owner, {
+    userId: "inspector",
+    cameraIds: ["one"],
+    start: 100,
+    end: 200,
+    expiresAt: Date.now() + 60000,
+    requestId: "READBACK",
+    purpose: "Fixture",
+  });
+  overview = await (
+    await f.call("/api/overview", null, { "x-test-actor": "inspector" })
+  ).json();
+  assert.equal(overview.cameras.length, 1);
+  assert.equal(overview.cameras[0].archive.readback, undefined);
+  fs.writeFileSync(
+    f.archive.file(segment.receipt.objectKey),
+    "test-video-fixture",
+  );
+  await inspectSegment(f.store, f.archive, f.id);
+  observeVerification(f.store);
+  timeline = await (
+    await f.call("/api/timeline?camera=one&start=100&end=200")
+  ).json();
+  assert.equal(timeline.coveredMs, 100);
+  assert.equal((await f.call(`/api/media/${f.id}/playback`)).status, 200);
+});
 test("pipeline observations respect camera scope and are withheld from inspector sessions", async (t) => {
   const f = await fixture(t);
   f.store.put("pipeline-health", "one", { cameraId: "one", status: "behind" });

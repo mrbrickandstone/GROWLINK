@@ -24,6 +24,8 @@ SECURITY_MIN_FREE_BYTES=20000000000
 # Duplicate cache only; requires qualified independent immutable storage.
 SECURITY_ENABLE_CACHE_EVICTION=false
 SECURITY_CACHE_KEEP_HOURS=24
+# Full-object rechecks; qualify cadence, bandwidth and cost on the actual archive.
+SECURITY_ARCHIVE_VERIFY_HOURS=168
 
 # Approved Ring worker only; leave unset until dedicated access is commissioned.
 RING_CLIENT_ID=

@@ -24,6 +24,9 @@ const FAULT_CODES = [
   "SCHEDULER_FAILED",
   "PIPELINE_OBSERVATION_FAILED",
   "CACHE_MAINTENANCE_FAILED",
+  "ARCHIVE_READBACK_FAILED",
+  "ARCHIVE_VERIFICATION_OVERDUE",
+  "ARCHIVE_VERIFICATION_SCHEDULER_FAILED",
 ];
 const FAULT_LABELS = {
   DISK_SPACE_LOW: "Transfers paused for low disk space",
@@ -46,6 +49,11 @@ const FAULT_LABELS = {
   PIPELINE_OBSERVATION_FAILED: "Transfer monitoring failed",
   CACHE_MAINTENANCE_FAILED:
     "Local cache cleanup needs review; archived originals are unchanged",
+  ARCHIVE_READBACK_FAILED:
+    "An archive copy is missing, altered or unreadable; coverage requires recovery",
+  ARCHIVE_VERIFICATION_OVERDUE: "Scheduled archive readback is overdue",
+  ARCHIVE_VERIFICATION_SCHEDULER_FAILED:
+    "Archive verification scheduling or observation failed",
 };
 function policyApproved(store) {
   const p = store.get("policy", "ring");

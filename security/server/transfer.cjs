@@ -465,41 +465,17 @@ async function buildPlayback(
   });
 }
 async function reconcile(store, archive) {
-  let invalid = 0;
+  const { inspectSegment } = require("./reconciliation.cjs");
+  let invalid = 0,
+    checked = 0;
   for (const s of store
     .all("segments")
     .filter((s) => s.verified && !s.deletedAt)) {
-    if (!(await archive.verify(s.receipt))) {
-      store.tx(() => {
-        store.put("segments", s.id, {
-          ...s,
-          verified: false,
-          verificationError: "ARCHIVE_RECONCILIATION_FAILED",
-        });
-        if (
-          !store
-            .all("deletions")
-            .some(
-              (d) =>
-                d.segmentId === s.id &&
-                ["approved", "deleted"].includes(d.state),
-            )
-        )
-          store.db
-            .prepare(
-              "UPDATE jobs SET state='queued',next=0 WHERE id=? AND state='complete'",
-            )
-            .run(s.id);
-        store.audit(
-          { id: "transfer-worker" },
-          "archive.reconciliation.failed",
-          { segmentId: s.id },
-        );
-      });
-      invalid++;
-    }
+    const result = await inspectSegment(store, archive, s.id);
+    if (result.state !== "skipped") checked++;
+    if (!["verified", "skipped"].includes(result.state)) invalid++;
   }
-  return { checked: store.all("segments").length, invalid };
+  return { checked, invalid };
 }
 async function reconcileHolds(store, archive) {
   if (!archive.independent) return;
