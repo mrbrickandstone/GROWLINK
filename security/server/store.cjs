@@ -3,10 +3,10 @@ const fs = require("node:fs"),
   path = require("node:path"),
   crypto = require("node:crypto");
 const { DatabaseSync } = require("node:sqlite");
+const { digest, auditIntegrity } = require("./audit.cjs");
 const { coverage, windowRange } = require("../../lib/security/coverage.cjs");
 const DAY = 86400000,
   ROLES = ["owner", "operator", "technician", "auditor", "inspector"];
-const digest = (x) => crypto.createHash("sha256").update(x).digest("hex");
 function error(code, status = 400) {
   return Object.assign(new Error(code), { status });
 }
@@ -24,6 +24,13 @@ class Store {
     this.root = path.resolve(root);
     this.now = now;
     fs.mkdirSync(this.root, { recursive: true, mode: 0o700 });
+    // Restored state must not revive stale grants, sessions or deletion approvals.
+    try {
+      fs.lstatSync(path.join(this.root, "RECOVERY_REQUIRED"));
+      throw error("RECOVERY_REVALIDATION_REQUIRED", 409);
+    } catch (e) {
+      if (e.code !== "ENOENT") throw e;
+    }
     this.db = new DatabaseSync(path.join(this.root, "command.sqlite"));
     fs.chmodSync(path.join(this.root, "command.sqlite"), 0o600);
     this.db.function("audit_hash", digest);
@@ -89,23 +96,7 @@ class Store {
       .map((r) => ({ ...r, event: JSON.parse(r.event) }));
   }
   auditIntegrity() {
-    let previous = "0".repeat(64);
-    let count = 0;
-    for (const r of this.db.prepare("SELECT * FROM audit ORDER BY seq").all()) {
-      if (
-        r.previous !== previous ||
-        r.hash !== digest(previous + "\n" + r.event)
-      )
-        return { valid: false, count };
-      previous = r.hash;
-      count++;
-    }
-    return {
-      valid: true,
-      count,
-      head: previous,
-      externalCheckpoint: "not-configured",
-    };
+    return auditIntegrity(this.db);
   }
   user(id) {
     const u = this.get("users", id);

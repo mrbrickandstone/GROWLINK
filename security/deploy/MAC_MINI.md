@@ -21,7 +21,7 @@ B2 documents version IDs, AES256 server-side encryption and retention/legal-hold
 
 Start with 8 GB RAM or more and at least 200 GB free on a persistent encrypted local volume for a **bounded one-camera staging run**. These are engineering screening thresholds, not vendor minimums or production sizing. Target 16 GB RAM if available, then measure software H.264 encoding and recovery backlog. The implementation uses `libx264`, not Apple hardware acceleration.
 
-Run on the actual Mac mini after Node 22.13+ and FFmpeg are installed:
+Run on the actual Mac mini after Node 22.16+ and FFmpeg are installed:
 
 ```sh
 node security/deploy/check-host.cjs "/Library/Application Support/Farber/data"
@@ -79,7 +79,7 @@ Do not install the watchdog on this Mac; use the existing Linux watchdog unit on
 
 Test synthetic media through the off-site archive first, then named sign-in and rejected unauthorized requests. Configure dedicated Ring access and the existing policy gates only after their approvals are recorded. Never re-scope existing Vercel production secrets as an installation shortcut.
 
-Stop/restart the worker during an in-flight transfer; verify lease expiry/recovery, original checksums and timestamp coverage after restart. Independently stop the web service and establish that capture and archive transfers continue. Test internet loss, full-disk handling, reboot, UPS recovery, remote access revocation and alert receipt. Back up SQLite consistently (SQLite backup API or all services stopped), signing keys and audit checkpoints to encrypted independent storage and demonstrate restore. Copying only a live WAL database file is not a valid backup.
+Stop/restart the worker during an in-flight transfer; verify lease expiry/recovery, original checksums and timestamp coverage after restart. Independently stop the web service and establish that capture and archive transfers continue. Test internet loss, full-disk handling, reboot, UPS recovery, remote access revocation and alert receipt. Use the [backup and recovery tooling](BACKUP_RECOVERY.md) for a consistent SQLite snapshot, matching signing key, encrypted restic backup and verified quarantined restore. Commission independent storage and checkpoint custody, backup scheduling/alerts and a reviewed activation procedure on the actual host. Copying only a live WAL database file is not a valid backup.
 
 Before any upgrade, stop both services and take that consistent backup. Keep the preceding release. To stop staging:
 

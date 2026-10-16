@@ -11,7 +11,7 @@ const { include } = require("../../security/deploy/release.cjs");
 test("host screening rejects sleep, unknown recovery, missing dependencies and insufficient disk", () => {
   const f = {
     platform: "darwin",
-    node: "22.13.0",
+    node: "22.16.0",
     memoryBytes: 16e9,
     freeBytes: 250e9,
     sqlite: true,
@@ -29,7 +29,7 @@ test("host screening rejects sleep, unknown recovery, missing dependencies and i
     { freeBytes: 37e9 },
     { freeBytes: null },
     { dependencies: false },
-    { node: "22.12.0" },
+    { node: "22.15.0" },
     { memoryBytes: null },
   ])
     assert.equal(assess({ ...f, ...patch }).screeningPassed, false);
@@ -96,6 +96,7 @@ test("release allowlist excludes state, footage, real service configs and develo
     "security/deploy/worker.example.json",
     "security/deploy/com.farber.security.worker.plist",
     "security/deploy/run-service.cjs",
+    "security/backup.cjs",
     "security/package-lock.json",
     "security/public/app.js",
     "lib/security/ring-pilot.cjs",

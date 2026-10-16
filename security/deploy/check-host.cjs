@@ -29,10 +29,10 @@ function collect(dataPath) {
     freeBytes = s.bavail * s.bsize;
   } catch {}
   try {
-    const { DatabaseSync } = require("node:sqlite");
+    const { DatabaseSync, backup } = require("node:sqlite");
     const d = new DatabaseSync(":memory:");
     d.close();
-    sqlite = true;
+    sqlite = typeof backup === "function";
   } catch {}
   let dependencies = true;
   for (const name of ["@aws-sdk/client-s3", "openid-client"])
@@ -67,7 +67,7 @@ function assess(f) {
   const [major, minor] = f.node.split(".").map(Number);
   const checks = {
     supportedPlatform: ["darwin", "linux"].includes(f.platform),
-    node: major > 22 || (major === 22 && minor >= 13),
+    node: major > 22 || (major === 22 && minor >= 16),
     sqlite: f.sqlite,
     dependencies: f.dependencies,
     memoryAtLeast8GB: f.memoryBytes >= 8e9,

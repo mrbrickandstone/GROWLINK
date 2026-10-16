@@ -1,0 +1,12 @@
+{
+  "dataDir": "/Library/Application Support/Farber/data",
+  "stagingParent": "/Library/Application Support/Farber/backup-staging",
+  "resticBinary": "/opt/homebrew/bin/restic",
+  "repository": "s3:https://REPLACE-ENDPOINT/REPLACE-PRIVATE-BACKUP-BUCKET",
+  "passwordFile": "/Library/Application Support/Farber/config/backup-password",
+  "credentials": {
+    "AWS_ACCESS_KEY_ID": "REPLACE-PRIVATELY",
+    "AWS_SECRET_ACCESS_KEY": "REPLACE-PRIVATELY",
+    "AWS_DEFAULT_REGION": "REPLACE-REGION"
+  }
+}
