@@ -314,6 +314,51 @@ test("camera permissions alone never show verified access or continuous retentio
   assert.equal(c.access.state, "unknown");
   assert.equal(c.retention.state, "degraded");
 });
+test("recent isolated footage, online status and qualification flags never prove continuous capture", (t) => {
+  const { store, advance } = setup(t);
+  const camera = {
+    ...store.get("cameras", "one"),
+    online: true,
+    sourceQualified: true,
+  };
+  store.put("cameras", camera.id, camera);
+  assert.equal(store.cameraStatus(operator, camera).capture.state, "unknown");
+  const s = segment(store);
+  const current = store.cameraStatus(operator, camera);
+  assert.equal(current.media.count, 1);
+  assert.equal(current.capture.state, "unknown");
+  assert.match(current.capture.detail, /do not establish/);
+  assert.equal(current.capture.observedAt, null);
+  assert.equal(current.capture.latestFootageEnd, s.end);
+  const timeline = store.timeline(
+    operator,
+    camera.id,
+    s.start - 1000,
+    s.end + 1000,
+  );
+  assert.ok(timeline.gaps.length > 0);
+  advance(121000);
+  assert.equal(store.cameraStatus(operator, camera).capture.state, "stale");
+  advance(-130000);
+  const future = store.cameraStatus(operator, camera);
+  assert.equal(future.capture.state, "unknown");
+  assert.match(future.capture.detail, /ahead of the control clock/);
+});
+test("playback access freshness rejects future, invalid and expired observations", (t) => {
+  const { store, advance } = setup(t);
+  const camera = store.get("cameras", "one");
+  const observedAt = store.now();
+  for (const at of [observedAt + 1, String(observedAt), null]) {
+    store.put("access", operator.id + "|one", { at });
+    assert.equal(store.cameraStatus(operator, camera).access.state, "unknown");
+  }
+  store.put("access", operator.id + "|one", { at: observedAt });
+  assert.equal(store.cameraStatus(operator, camera).access.state, "verified");
+  advance(299999);
+  assert.equal(store.cameraStatus(operator, camera).access.state, "verified");
+  advance(1);
+  assert.equal(store.cameraStatus(operator, camera).access.state, "unknown");
+});
 test("inspection and power records preserve measured outcomes rather than invented eight-hour passes", (t) => {
   const { store } = setup(t);
   const input = {

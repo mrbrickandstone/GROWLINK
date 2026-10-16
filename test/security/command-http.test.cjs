@@ -306,6 +306,19 @@ test("browser API connects records, named actions, exact byte ranges and signed 
     JSON.stringify(overview).includes("private-provider-reference"),
     false,
   );
+  const originalSegment = f.store.get("segments", f.id);
+  f.store.put("segments", f.id, {
+    ...originalSegment,
+    start: Date.now() - 2000,
+    end: Date.now() - 1000,
+  });
+  const recent = await (await f.call("/api/overview")).json();
+  const recentCamera = recent.cameras.find((c) => c.id === "one");
+  assert.equal(recentCamera.media.count, 1);
+  assert.equal(recentCamera.capture.state, "unknown");
+  assert.equal(recentCamera.capture.observedAt, null);
+  assert.match(recentCamera.capture.detail, /do not establish/);
+  f.store.put("segments", f.id, originalSegment);
   r = await f.call(`/api/media/${f.id}/playback`, null, { Range: "bytes=0-3" });
   assert.equal(r.status, 206);
   assert.equal(r.headers.get("content-range"), "bytes 0-3/16");

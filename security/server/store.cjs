@@ -246,15 +246,29 @@ class Store {
       archived = seg.filter(
         (s) => s.receipt?.independent && s.receipt.readbackVerifiedAt,
       );
+    // Historical media proves only its recorded interval. Even a recent clip,
+    // online camera or source-qualification flag is not a current continuous
+    // recording-health observation. No supported live recording probe is wired
+    // into this source yet, so never infer healthy capture from archive bytes.
     const capture = !newest
       ? { state: "unknown", detail: "No verified recorded frames" }
-      : this.now() - newest > 120000
-        ? { state: "stale", detail: "Latest verified footage is historical" }
-        : {
-            state: "verified",
+      : newest > this.now()
+        ? {
+            state: "unknown",
             detail:
-              "Recent exported frames; source qualification still pending",
-          };
+              "Footage timestamp is ahead of the control clock; current recording is unverified",
+          }
+        : this.now() - newest > 120000
+          ? {
+              state: "stale",
+              detail:
+                "Latest verified footage is historical; current continuous recording is unverified",
+            }
+          : {
+              state: "unknown",
+              detail:
+                "Recent exported frames do not establish current continuous recording",
+            };
     const required = coverage(
       this.now() - 60 * DAY,
       this.now(),
@@ -271,7 +285,11 @@ class Store {
       this.authorize(actor, "playback", c.id);
       const observation = this.get("access", actor.id + "|" + c.id);
       const verified =
-        !actor.readOnly && observation && this.now() - observation.at < 300000;
+        !actor.readOnly &&
+        observation &&
+        Number.isSafeInteger(observation.at) &&
+        observation.at <= this.now() &&
+        this.now() - observation.at < 300000;
       access = {
         state: verified ? "verified" : "unknown",
         detail: actor.readOnly
@@ -299,7 +317,11 @@ class Store {
           seg.filter((s) => s.derivative).sort((a, b) => b.end - a.end)[0]
             ?.id || null,
       },
-      capture: { ...capture, observedAt: newest || null },
+      capture: {
+        ...capture,
+        observedAt: null,
+        latestFootageEnd: newest || null,
+      },
       archive: {
         state: readback?.failed
           ? "failed"
