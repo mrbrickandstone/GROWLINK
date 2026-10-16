@@ -141,7 +141,17 @@ function workerHealth() {
       disk?.freeBytes == null
         ? "Free disk space is unverified."
         : `${(disk.freeBytes / 1e9).toFixed(1)} GB free · ${(disk.reserveBytes / 1e9).toFixed(1)} GB reserve.`;
-  return `<section class="panel" aria-label="Archive worker health"><h2>${esc(label)}</h2><p>${esc(space)} ${disk?.paused && fresh ? "New jobs are paused. Transfers retry after sufficient space returns." : ""}</p><small>Last report: ${esc(date(h?.at))}. This does not establish camera recording health. Independent alert delivery remains uncommissioned.</small></section>`;
+  const backup = h?.backup,
+    backupLabel = !fresh
+      ? "Backup status unconfirmed"
+      : backup?.state === "verified"
+        ? "Control backup readback verified"
+        : backup?.state === "running"
+          ? "Control backup in progress"
+          : !backup || backup.state === "unconfigured"
+            ? "Scheduled backup not configured"
+            : "Control backup needs attention";
+  return `<section class="panel" aria-label="Archive worker health"><h2>${esc(label)}</h2><p>${esc(space)} ${disk?.paused && fresh ? "New jobs are paused. Transfers retry after sufficient space returns." : ""}</p><small>Last report: ${esc(date(h?.at))}. This does not establish camera recording health. Independent alert delivery remains uncommissioned.</small></section><section class="panel" aria-label="Control-data backup status"><h2>${esc(backupLabel)}</h2><p>Snapshot: ${esc(date(backup?.lastSnapshotAt))} · Readback: ${esc(date(backup?.lastVerifiedAt))}</p>${backup?.faultCodes?.length ? `<p>${esc(backup.faultCodes.join(" · ").replaceAll("_", " "))}</p>` : ""}<small>Control records and signing key only; original footage uses its separate archive. Independent backup location and checkpoint custody remain uncommissioned.</small></section>`;
 }
 function elapsed(ms) {
   if (ms == null) return "—";

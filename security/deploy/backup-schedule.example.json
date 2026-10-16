@@ -1,0 +1,7 @@
+{
+  "backupConfigFile": "/Library/Application Support/Farber/config/backup.json",
+  "stateDir": "/Library/Application Support/Farber/backup-state",
+  "intervalMinutes": 60,
+  "minimumFreeBytes": 20000000000,
+  "maxRunMinutes": 15
+}

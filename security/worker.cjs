@@ -45,6 +45,11 @@ async function beat() {
   if (activeJob) store.renew(activeJob);
   const capacity = disk.inspect(activeJob ? 0 : JOB_HEADROOM);
   const faultCodes = [];
+  const backup = require("./server/backup-scheduler.cjs").observe(
+    process.env,
+    store.now(),
+  );
+  faultCodes.push(...backup.faultCodes);
   if (store.recoveryPending()) faultCodes.push("RECOVERY_REVIEW_REQUIRED");
   if (cacheFault) faultCodes.push("CACHE_MAINTENANCE_FAILED");
   try {
@@ -104,6 +109,7 @@ async function beat() {
     unresolvedJobs: failures,
     faultCodes: [...new Set(faultCodes)].sort(),
     disk: capacity,
+    backup,
   };
   const previous = store.get("heartbeats", "archive-worker")?.disk;
   if (previous?.state !== capacity.state)

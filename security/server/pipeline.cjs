@@ -8,6 +8,11 @@ const DAY = 86400000,
 const ADVERTISED_HISTORY_DAYS = 14,
   BACKLOG_WARNING = 900000;
 const FAULT_CODES = [
+  "BACKUP_RUN_FAILED",
+  "BACKUP_STALE",
+  "BACKUP_SCHEDULER_MISSING",
+  "BACKUP_RECONCILIATION_REQUIRED",
+  "BACKUP_STATUS_UNAVAILABLE",
   "RECOVERY_REVIEW_REQUIRED",
   "CONTROL_UNREACHABLE",
   "CONTROL_HEALTH_INVALID",
@@ -34,6 +39,14 @@ const FAULT_CODES = [
   "ARCHIVE_VERIFICATION_SCHEDULER_FAILED",
 ];
 const FAULT_LABELS = {
+  BACKUP_RUN_FAILED: "The control-data backup failed; recovery needs attention",
+  BACKUP_STALE:
+    "No sufficiently recent verified control-data backup is recorded",
+  BACKUP_SCHEDULER_MISSING:
+    "The control-data backup scheduler stopped reporting",
+  BACKUP_RECONCILIATION_REQUIRED:
+    "An interrupted control-data backup requires reconciliation",
+  BACKUP_STATUS_UNAVAILABLE: "Control-data backup status cannot be verified",
   RECOVERY_REVIEW_REQUIRED:
     "Recovered control data awaits review; transfers and releases are paused",
   CONTROL_UNREACHABLE: "Security dashboard endpoint is unreachable",

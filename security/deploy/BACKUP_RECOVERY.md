@@ -22,7 +22,7 @@ Use a separate backup repository and narrowly scoped storage credentials. Do not
 
 Copy [backup.example.json](backup.example.json) outside the checkout, replace placeholders privately and set mode 0600. Its fields are `dataDir`, `stagingParent`, `resticBinary`, `repository`, `passwordFile`, and optional scoped AWS S3 credential fields under `credentials`. The executable must be an administrator-verified absolute path, owned by root or the executing account and not group/world writable. The config, password and source data must have private permissions; symlinked config/password files are rejected. The child receives only the backup credential allowlist, not Ring/OIDC secrets or the invoking shell environment.
 
-Use an encrypted local volume and a dedicated mode-0700 staging directory. Allow space for the SQLite snapshot, readback copy and restic buffers; inspect capacity before each supervised run. The worker disk guard does not reserve space for a backup process. A successful run cleans up plaintext staging. Process termination or power loss can leave private `farber-backup-*` directories: an administrator must first establish that the backup process has stopped, preserve any needed diagnostic state, then remove only that run's temporary files. Filesystem deletion is not a secure-erasure claim. Scheduling and backup-specific capacity/alert monitoring remain commissioning work.
+Use an encrypted local volume and a dedicated mode-0700 staging directory. Allow space for the SQLite snapshot, readback copy and restic buffers. The archive-worker disk guard does not reserve space for backups; the scheduler below applies its own admission and running checks. The direct one-shot command remains a supervised operation. A successful run cleans up plaintext staging. Process termination or power loss can leave private `farber-backup-*` directories: an administrator must first establish that all backup processes have stopped, preserve any needed diagnostic state, then remove only that run's temporary files. Filesystem deletion is not a secure-erasure claim.
 
 ## Back up and verify
 
@@ -37,6 +37,44 @@ The command stages a consistent database, uploads only the allowlisted control f
 The checkpoint records the exact snapshot ID, manifest SHA256 and audit head. Preserve it through a separately controlled channel outside the worker, and compare successive audit heads/counts. Keeping it only beside the database cannot detect loss, rollback or replacement of both. The output deliberately keeps `independentLocationVerified: false`: a successful local readback cannot attest to provider independence, external checkpoint custody or restore availability after a site outage.
 
 Before unattended operation, agree and commission backup frequency/recovery objectives, external missing-backup alerts, encryption-key recovery and periodic recovery drills. Also schedule restic repository checks with actual data readback; ordinary metadata-only checks do not read all stored packs. The wrapper's per-backup readback verifies that snapshot, not every older snapshot. [restic repository checks](https://restic.readthedocs.io/en/stable/045_working_with_repos.html).
+
+## Scheduled backups and failure reporting
+
+The scheduler is implemented and locally tested; no OS schedule or external backup destination has been installed. Copy [backup-schedule.example.json](backup-schedule.example.json) to a private mode-0600 configuration file outside the checkout. Set `backupConfigFile` to the separately protected backup config above and create a service-account-owned mode-0700 `stateDir`. On the Mini, the example uses `/Library/Application Support/Farber/backup-state`. Keep backup staging and state outside the original-footage directory and on measured persistent encrypted storage.
+
+The example checks every minute through the host scheduler, runs a backup when its previous snapshot reaches 60 minutes, reserves 20 GB on each data/staging/state filesystem, and limits each run to 15 minutes. These are proposed operational recovery objectives, not OCM requirements or commissioned capacity. Admission additionally requires four times the current database-plus-WAL size and 512 MiB of headroom. Checks run during SQLite copying, between phases and every two seconds while a child runs; restic temporary files use the configured staging parent. Low or unknown space fails closed, and a running child is stopped before cleanup. Checks provide a margin, not an exclusive disk reservation; synchronous validation, unrelated writers and target-host performance still need measurement.
+
+Run a first supervised test with approved synthetic control data and the approved destination:
+
+```sh
+node security/backup-schedule.cjs run /private/path/backup-schedule.json
+```
+
+An exclusive on-disk run directory prevents overlap. Only an exact persisted checkpoint from a successful upload and restore verification records success. Private status/run records survive restart; failures retry after 5, 10, 20, 40 and then 60 minutes, retaining the fault until success. The original snapshot time determines freshness, not when upload or readback finished. A changed source/repository/tool/password-file configuration invalidates the previous schedule's freshness and preserves its history. A verified checkpoint does not establish off-site custody.
+
+After this test and host configuration review, install [com.farber.security.backup.plist](com.farber.security.backup.plist) alongside the web and worker launch daemons. It runs as `_farber`, checks at startup and every 60 seconds, and has no embedded credentials. Verify the Node path, private configs, service permissions, restic binary and log rotation before bootstrapping:
+
+```sh
+sudo launchctl bootstrap system /Library/LaunchDaemons/com.farber.security.backup.plist
+```
+
+For a Linux host, [farber-backup.service](farber-backup.service) and [farber-backup.timer](farber-backup.timer) provide the equivalent separate service. Set Linux paths in the private configs, use the `farber` service account, keep writable data/staging/state under `/var/lib/farber`, and align the service timeout with any changed run limit. Enable the timer only after the same destination and recovery checks. Neither template has been installed by development tests.
+
+Configure the archive worker's private `SECURITY_BACKUP_STATE_DIR` to the same state directory and `SECURITY_BACKUP_MAX_AGE_MINUTES` to the agreed limit (example: 120). The worker only observes status; it does not execute backups. The dashboard shows snapshot/readback times separately from footage protection. An unset state directory is explicitly unconfigured and does not create backup incidents; configure it before commissioning. Missing or altered checkpoints, failed runs, uncertain interrupted runs and stale snapshots become allowlisted watchdog faults. No scheduler observation for more than three minutes also faults unless a bounded active run is present. A stale worker heartbeat cannot keep the dashboard's backup status green.
+
+The existing external watchdog receives these faults through worker heartbeats; worker/host silence has its separate timeout. Test actual failure-to-recipient delivery within five minutes for each actionable fault, including the scheduler stopping. The 120-minute snapshot-age threshold is a control-data recovery threshold, not a claim that backup or camera failures take two hours to report. Recipient delivery, off-site storage, independent checkpoint custody, encryption-key recovery and target-host timing remain uncommissioned.
+
+## Reconcile an interrupted scheduled run
+
+An existing active-run directory is never automatically removed because its process or deadline disappeared. Stop the host schedule and establish that the recorded scheduler, child and any unrecorded restic child have stopped. A crash between child creation and PID persistence can leave an unrecorded child; checking only a PID file is insufficient. A reused live PID conservatively blocks reconciliation. Preserve private staging, partial checkpoints and repository diagnostics while reviewing the interruption.
+
+After that administrator review, run:
+
+```sh
+node security/backup-schedule.cjs reconcile /private/path/backup-schedule.json --processes-confirmed-stopped INCIDENT-REFERENCE
+```
+
+Use a nonsecret case reference. The command refuses recorded live processes or a changed destination configuration. It archives the uncertain run directory and records the review. A complete valid checkpoint can recover success without repeating provider work; otherwise the run is marked interrupted and the next scheduler invocation can retry. No incomplete checkpoint counts as success. This command does not unlock/prune restic, delete remote snapshots or remove abandoned staging. Review and resolve any repository lock separately, preserve needed diagnostics, and restart the schedule only after the actual process/destination state is understood.
 
 ## Restore to quarantine
 
@@ -99,10 +137,12 @@ Old sessions, inspector grants, suspended evidence exports and deletion approval
 
 `npm test` includes consistent-WAL copying during concurrent writes; missing/wrong signing key and signature/audit corruption rejection; trusted-checkpoint, inventory/hash and symlink rejection; fresh pre-key backup; refusal to start restored workers/CLI; private config/credential isolation; and partial restic failure cleanup without secret output. Eight recovery-preparation scenarios add command output/privacy, disarmed-state migration, unchanged source/signature/history checks, guarded operations, fresh readback, a real recovery worker, actual SIGKILL after migration, unsafe-input rejection and HTTP enforcement. Nine activation scenarios add current-owner/MFA/scope checks, exact-state and expiry rejection, explicit original-copy/control-data exceptions, unchanged original requests, stale-access protection, atomic rollback, actual SIGKILL before commit, repeat recovery and authenticated HTTP flow.
 
+Eleven scheduler scenarios add private-config validation, persisted cadence, target changes, overlap prevention, capacity admission, retry timing, missing/altered checkpoints, stale/silent scheduler faults, worker-to-watchdog reporting, actual SIGKILL before/after checkpoint publication, explicit stopped-process reconciliation, child cancellation and capacity loss during a running child. Failure cases do not publish successful checkpoints. Browser verification exercised the real status observer and dashboard API with synthetic state: removing a checkpoint displayed attention; restoring it cleared the fault. No real notification was sent.
+
 Run the separate actual encryption/recovery drill with a verified binary:
 
 ```sh
 FARBER_TEST_RESTIC=/absolute/path/to/restic node --test test/security/backup-restic.drill.cjs
 ```
 
-The drill uses only temporary synthetic records and a randomly generated local password. It creates an encrypted repository, backs up and reads back, runs `check --read-data`, removes the synthetic source database/key to simulate host loss, restores exact records/key/signatures, rejects a wrong password and an altered repository pack, and confirms the raw restored database cannot start a worker. It then prepares a separate recovery copy and verifies disabled users, revoked sessions, suspended exports and valid audit history. It contacts no provider and removes its disposable data. This is a local software recovery test, not a Southampton or off-site commissioning result.
+The drill uses only temporary synthetic records and a randomly generated local password. It creates an encrypted repository, performs backup/readback through the scheduler, verifies the next invocation is not due, runs `check --read-data`, removes the synthetic source database/key to simulate host loss, restores exact records/key/signatures, rejects a wrong password and an altered repository pack, and confirms the raw restored database cannot start a worker. It then prepares a separate recovery copy and verifies disabled users, revoked sessions, suspended exports and valid audit history. It contacts no provider and removes its disposable data. This is a local software recovery test, not a Southampton or off-site commissioning result.

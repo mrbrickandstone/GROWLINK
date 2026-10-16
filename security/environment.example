@@ -51,3 +51,6 @@ SECURITY_CONTROL_HEALTH_TOKEN=
 # Separate credentials from both the worker heartbeat and dashboard health token.
 SECURITY_DEADMAN_URL=
 SECURITY_DEADMAN_TOKEN=
+# Optional control-data backup status directory; configure after supervised tests.
+SECURITY_BACKUP_STATE_DIR=
+SECURITY_BACKUP_MAX_AGE_MINUTES=120

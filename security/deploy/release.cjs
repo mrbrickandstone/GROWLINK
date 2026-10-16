@@ -5,7 +5,7 @@ const fs = require("node:fs"),
   crypto = require("node:crypto");
 const { execFileSync } = require("node:child_process");
 function include(name) {
-  return /^(security\/(server\/[^/]+\.cjs|public\/[^/]+\.(html|js|css)|deploy\/[^/]+\.(cjs|plist|example\.json|md|service|example)|(?:server|worker|watchdog|cli|backup|recovery)\.cjs|package(?:-lock)?\.json|site\.json|README\.md|environment\.example)|lib\/(ring\.cjs|security\/(coverage|ring-pilot)\.cjs)|docs\/security\/[^/]+\.(md|svg))$/.test(
+  return /^(security\/(server\/[^/]+\.cjs|public\/[^/]+\.(html|js|css)|deploy\/[^/]+\.(cjs|plist|example\.json|md|service|timer|example)|(?:server|worker|watchdog|cli|backup|backup-schedule|recovery)\.cjs|package(?:-lock)?\.json|site\.json|README\.md|environment\.example)|lib\/(ring\.cjs|security\/(coverage|ring-pilot)\.cjs)|docs\/security\/[^/]+\.(md|svg))$/.test(
     name,
   );
 }

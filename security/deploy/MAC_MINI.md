@@ -55,7 +55,7 @@ An administrator should create a dedicated non-admin `_farber` account and group
 - `_farber`-owned mode-0700 data at `/Library/Application Support/Farber/data` on local APFS, outside iCloud/Dropbox/network shares.
 - A root-owned non-writable configuration directory, with role-specific files `/Library/Application Support/Farber/config/worker.json` and `web.json`, each owned by `_farber`, mode 0600. Copy the key-only examples outside the repository and fill values privately. The loader rejects symlinks, group/world access, unexpected keys and invalid JSON without logging values. Web config excludes Ring credentials. Use distinct scoped storage keys for the read-only web service and upload/hold worker.
 - `_farber`-owned mode-0700 `/Library/Logs/Farber`, with protected log rotation configured before operation. Never log environment dumps, OAuth callback query strings or bearer headers.
-- Node at `/opt/homebrew/bin/node` on Apple Silicon. On Intel, verify the installed executable and adjust both plist files (often `/usr/local/bin/node`). Verify `_farber` can execute Node/FFmpeg and read installed dependencies. Do not grant it write access to code or tool binaries.
+- Node at `/opt/homebrew/bin/node` on Apple Silicon. On Intel, verify the installed executable and adjust every installed plist (often `/usr/local/bin/node`). Verify `_farber` can execute Node/FFmpeg and read installed dependencies. Do not grant it write access to code or tool binaries.
 
 Initialize room labels as `_farber` with the data directory supplied, without moving pilot footage or enabling Ring:
 
@@ -73,19 +73,23 @@ sudo launchctl bootstrap system /Library/LaunchDaemons/com.farber.security.worke
 sudo launchctl bootstrap system /Library/LaunchDaemons/com.farber.security.web.plist
 ```
 
+Scheduled control-data backups have a separate optional launch daemon, `com.farber.security.backup.plist`; they continue independently of the web and archive-worker processes. Before enabling it, follow [backup scheduling and recovery](BACKUP_RECOVERY.md#scheduled-backups-and-failure-reporting): provision and test the approved repository, install the verified restic binary, create private backup staging/state directories, and prepare `backup.json` and `backup-schedule.json` outside the checkout. The default schedule is hourly with a 20 GB reserve and 15-minute run limit. Set the worker's `SECURITY_BACKUP_STATE_DIR` and agreed `SECURITY_BACKUP_MAX_AGE_MINUTES` so failures and missed runs reach the external watchdog. An unset state directory remains visibly unconfigured. These templates have been tested locally, not installed on the Mini.
+
 Do not install the watchdog on this Mac; use the existing Linux watchdog unit on the external host with its own credentials, TLS endpoint and notification recipient configuration. Follow the [independent monitoring handoff](WATCHDOG.md) for the private signed web-readiness probe and optional secondary-monitor pulse. Actual end-to-end receipt within five minutes remains untested. Export readiness lag also means worker heartbeats alone cannot prove five-minute camera-failure detection.
 
 ## Commissioning and rollback
 
 Test synthetic media through the off-site archive first, then named sign-in and rejected unauthorized requests. Configure dedicated Ring access and the existing policy gates only after their approvals are recorded. Never re-scope existing Vercel production secrets as an installation shortcut.
 
-Stop/restart the worker during an in-flight transfer; verify lease expiry/recovery, original checksums and timestamp coverage after restart. Independently stop the web service and establish that capture and archive transfers continue. Test internet loss, full-disk handling, reboot, UPS recovery, remote access revocation and alert receipt. Use the [backup and recovery tooling](BACKUP_RECOVERY.md) for a consistent SQLite snapshot, matching signing key, encrypted restic backup and verified quarantined restore. Commission independent storage and checkpoint custody, backup scheduling/alerts and a reviewed activation procedure on the actual host. Copying only a live WAL database file is not a valid backup.
+Stop/restart the worker during an in-flight transfer; verify lease expiry/recovery, original checksums and timestamp coverage after restart. Independently stop the web service and establish that capture and archive transfers continue. Test internet loss, full-disk handling, reboot, UPS recovery, remote access revocation and alert receipt. Use the [backup and recovery tooling](BACKUP_RECOVERY.md) for a consistent SQLite snapshot, matching signing key, encrypted restic backup and verified quarantined restore. Exercise the implemented backup schedule, capacity checks, interrupted-run reconciliation and reviewed recovery activation on the actual host. Commission independent storage/checkpoint custody and actual backup-fault notification receipt. Copying only a live WAL database file is not a valid backup.
 
-Before any upgrade, stop both services and take that consistent backup. Keep the preceding release. To stop staging:
+Before any upgrade, stop the backup schedule if installed, confirm its run and any restic child have stopped, then stop the web/worker and take a supervised consistent backup. Reconcile an uncertain scheduled run using the documented process before resuming it. Keep the preceding release. To stop staging services:
 
 ```sh
 sudo launchctl bootout system/com.farber.security.web
 sudo launchctl bootout system/com.farber.security.worker
 ```
+
+If installed, stop the separate schedule with `sudo launchctl bootout system/com.farber.security.backup`. Do not clear an active-run directory manually or delete footage to make room for a backup.
 
 Switch code only after compatibility review; a database migration requires a tested restore plan. Preserve original evidence and audit state during rollback. No install, service bootstrap, remote host change, paid resource, credential transfer or production change has been performed by preparing this package.

@@ -89,10 +89,33 @@ test("real restic encrypted repository survives synthetic host loss and rejects 
     { mode: 0o600 },
   );
   const config = readConfig(configFile),
-    checkpointFile = path.join(root, "checkpoint.json");
-  let checkpoint;
+    stateDir = path.join(root, "schedule-state");
+  fs.mkdirSync(stateDir, { mode: 0o700 });
+  const schedule = {
+    backup: config,
+    stateDir,
+    intervalMinutes: 60,
+    minimumFreeBytes: 1000000000,
+    maxRunMinutes: 15,
+  };
+  let checkpoint, checkpointFile;
   try {
-    checkpoint = await createBackup(config, checkpointFile);
+    const scheduler = require("../../security/server/backup-scheduler.cjs");
+    assert.equal((await scheduler.run(schedule)).state, "complete");
+    const state = JSON.parse(
+      fs.readFileSync(path.join(stateDir, "status.json")),
+    );
+    checkpointFile = path.join(
+      stateDir,
+      "checkpoints",
+      state.lastSuccess.checkpoint,
+    );
+    checkpoint = readCheckpoint(checkpointFile);
+    assert.equal((await scheduler.run(schedule)).state, "not-due");
+    assert.equal(
+      scheduler.observe({ SECURITY_BACKUP_STATE_DIR: stateDir }).state,
+      "verified",
+    );
   } finally {
     store.close();
   }

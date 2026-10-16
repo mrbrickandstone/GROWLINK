@@ -32,6 +32,8 @@ Authenticated `GET /status` exposes the last completed cycle, sequence, probe co
 
 ## Required failure tests before activation
 
+The archive worker can also observe the separately scheduled control-data backups. Set `SECURITY_BACKUP_STATE_DIR` and the agreed `SECURITY_BACKUP_MAX_AGE_MINUTES` in its private configuration. Failed runs, a scheduler absent for more than three minutes, stale snapshots, interrupted runs requiring reconciliation and unavailable/tampered checkpoint status become allowlisted heartbeat faults. The worker does not start backups. An unset state directory is unconfigured and emits no backup fault, so configuration is a commissioning requirement. A running backup has its own deadline; silence from the worker still follows the normal 90-second heartbeat rule. The example 120-minute snapshot-age threshold expresses a recovery objective, not camera-failure detection. See [backup scheduling](BACKUP_RECOVERY.md#scheduled-backups-and-failure-reporting).
+
 | Injected failure | Expected observation | Evidence still needed on the real setup |
 |---|---|---|
 | Web service/TLS/front-door outage | Independent `control-web` incident; worker continues | Original hashes/timestamps during outage and actual recipient receipt |
@@ -43,9 +45,12 @@ Authenticated `GET /status` exposes the last completed cycle, sequence, probe co
 | Secondary endpoint failure | Failed pulse state; remote service sees silence | Provider outage/escalation plan and independent recipients |
 | Identity-provider outage, camera/recorder failure, power loss | Separate supported signal or controlled commissioning observation | These are not established by configuration or a worker heartbeat |
 | Archive corruption or retention failure | Existing full-byte checks/retention controls; additional provider-health monitoring | Seven-day readback is not five-minute corruption detection |
+| Failed backup, stopped backup schedule, missing checkpoint or stuck run | Worker backup fault; host/worker silence remains separately monitored | Target-host detection and recipient receipt within five minutes of the actionable fault |
 
 Use disposable test footage and explicitly authorized test notifications during commissioning. Preserve incident IDs, failure/start times, dispatch acceptance, recipient receipt, recovery time and relevant hashes as evidence. Tests should cover both named and unconfigured components, startup, SIGKILL, restart, lost credentials and exhausted notification retries. Do not mark the system commissioned while any required fault path lacks measured results.
 
 ## Local verification
 
 Ten added automated tests cover private signed readiness, wrong/absent credentials, replay/stale/tampered responses, database failures, sign-in configuration, bounded/malformed responses, endpoint/credential separation, nonoverlapping cycles, notification-failure pulse suppression, retry identity after reopen, reserved-component spoof rejection and status freshness. A real watchdog subprocess used disposable local TLS endpoints, survived an actual SIGKILL/restart with a preserved cycle sequence and sent a synthetic incident when the dashboard fixture failed. A separate actual worker completed synthetic archive/playback work after the dashboard endpoint was stopped. No real recipient, external provider, Ring API or production service was contacted.
+
+The backup scheduler tests additionally exercised missing/stale/altered checkpoints, scheduler silence, actual SIGKILL/reconciliation and a real worker reporting backup faults. The watchdog recorded the corresponding synthetic incident; this is not a recipient-delivery measurement. A browser check verified missing-checkpoint attention and recovery using synthetic state through the real dashboard API.

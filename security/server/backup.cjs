@@ -161,6 +161,8 @@ function inspectDatabase(root) {
   }
 }
 async function snapshot(sourceRoot, destination, options = {}) {
+  options.signal?.throwIfAborted();
+  options.assertSpace?.();
   sourceRoot = privateDirectory(sourceRoot);
   privateFile(path.join(sourceRoot, DB));
   if (fs.existsSync(path.join(sourceRoot, MARKER)))
@@ -172,7 +174,11 @@ async function snapshot(sourceRoot, destination, options = {}) {
     source = new DatabaseSync(path.join(sourceRoot, DB), { readOnly: true });
     await backup(source, path.join(root, DB), {
       rate: options.rate || 100,
-      progress: options.progress,
+      progress: (...args) => {
+        options.signal?.throwIfAborted();
+        options.assertSpace?.();
+        options.progress?.(...args);
+      },
     });
     source.close();
     source = null;
@@ -323,9 +329,12 @@ function readConfig(file) {
     fail("PRIVATE_BACKUP_CONFIG_INVALID");
   }
 }
-async function restic(config, args, cwd) {
+async function restic(config, args, cwd, options = {}) {
+  let closed = Promise.resolve();
   try {
-    const result = await execute(
+    options.signal?.throwIfAborted();
+    options.assertSpace?.();
+    const pending = execute(
       config.resticBinary,
       ["--no-cache", "--json", ...args],
       {
@@ -334,14 +343,25 @@ async function restic(config, args, cwd) {
           PATH: "/usr/bin:/bin",
           RESTIC_REPOSITORY: config.repository,
           RESTIC_PASSWORD_FILE: config.passwordFile,
+          TMPDIR: config.stagingParent,
           AWS_EC2_METADATA_DISABLED: "true",
           ...(config.credentials || {}),
         },
         timeout: 600000,
+        signal: options.signal,
         killSignal: "SIGKILL",
         maxBuffer: 8388608,
       },
     );
+    closed = new Promise((resolve) => pending.child.once("close", resolve));
+    try {
+      options.onChild?.(pending.child.pid);
+    } catch (e) {
+      pending.child.kill("SIGKILL");
+      await pending.catch(() => {});
+      throw e;
+    }
+    const result = await pending;
     return result.stdout
       .trim()
       .split("\n")
@@ -349,6 +369,9 @@ async function restic(config, args, cwd) {
       .map((line) => JSON.parse(line));
   } catch {
     fail("RESTIC_OPERATION_FAILED");
+  } finally {
+    await closed;
+    options.onChild?.(null);
   } // Never relay provider URLs, credentials or tool output.
 }
 function readCheckpoint(file) {
@@ -367,7 +390,9 @@ function readCheckpoint(file) {
     fail("TRUSTED_BACKUP_CHECKPOINT_REQUIRED");
   }
 }
-async function restore(config, checkpoint, destination) {
+async function restore(config, checkpoint, destination, options = {}) {
+  options.signal?.throwIfAborted();
+  options.assertSpace?.();
   if (
     !HEX.test(checkpoint.snapshotId || "") ||
     !HEX.test(checkpoint.manifestSha256 || "")
@@ -392,6 +417,7 @@ async function restore(config, checkpoint, destination) {
         ]),
       ],
       root,
+      options,
     );
     return await verifySnapshot(root, checkpoint.manifestSha256);
   } catch (e) {
@@ -399,7 +425,9 @@ async function restore(config, checkpoint, destination) {
     throw e;
   }
 }
-async function createBackup(config, checkpointFile) {
+async function createBackup(config, checkpointFile, options = {}) {
+  options.signal?.throwIfAborted();
+  options.assertSpace?.();
   if (!path.isAbsolute(checkpointFile)) fail("ABSOLUTE_BACKUP_PATH_REQUIRED");
   // Reserve before upload; an existing checkpoint is never overwritten.
   const fd = fs.openSync(checkpointFile, "wx", 0o600);
@@ -412,6 +440,7 @@ async function createBackup(config, checkpointFile) {
     const { manifest, manifestSha256 } = await snapshot(
       config.dataDir,
       payload,
+      options,
     );
     const result = await restic(
       config,
@@ -425,6 +454,7 @@ async function createBackup(config, checkpointFile) {
         ...fs.readdirSync(payload).sort(),
       ],
       payload,
+      options,
     );
     const summary = result.find((r) => r.message_type === "summary");
     if (!HEX.test(summary?.snapshot_id || ""))
@@ -439,9 +469,17 @@ async function createBackup(config, checkpointFile) {
       independentLocationVerified: false,
       restoreVerified: true,
     };
-    await restore(config, checkpoint, path.join(work, "readback"));
+    await restore(config, checkpoint, path.join(work, "readback"), options);
+    options.signal?.throwIfAborted();
+    options.assertSpace?.();
     fs.writeFileSync(fd, JSON.stringify(checkpoint, null, 2) + "\n");
     fs.fsyncSync(fd);
+    const parent = fs.openSync(path.dirname(checkpointFile), "r");
+    try {
+      fs.fsyncSync(parent);
+    } finally {
+      fs.closeSync(parent);
+    }
     return checkpoint;
   } catch (e) {
     fs.rmSync(checkpointFile, { force: true });
@@ -459,4 +497,6 @@ module.exports = {
   readCheckpoint,
   createBackup,
   restore,
+  privateFile,
+  privateDirectory,
 };

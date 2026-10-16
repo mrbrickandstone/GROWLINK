@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.farber.security.backup</string>
+  <key>ProgramArguments</key><array>
+    <string>/opt/homebrew/bin/node</string>
+    <string>/opt/farber/security/backup-schedule.cjs</string>
+    <string>run</string>
+    <string>/Library/Application Support/Farber/config/backup-schedule.json</string>
+  </array>
+  <key>WorkingDirectory</key><string>/opt/farber</string>
+  <key>UserName</key><string>_farber</string>
+  <key>GroupName</key><string>_farber</string>
+  <key>RunAtLoad</key><true/>
+  <key>StartInterval</key><integer>60</integer>
+  <key>ExitTimeOut</key><integer>30</integer>
+  <key>Umask</key><integer>63</integer>
+  <key>StandardOutPath</key><string>/Library/Logs/Farber/backup.log</string>
+  <key>StandardErrorPath</key><string>/Library/Logs/Farber/backup.log</string>
+</dict></plist>
