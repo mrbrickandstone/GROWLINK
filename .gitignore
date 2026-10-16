@@ -6,3 +6,16 @@ node_modules/
 .DS_Store
 *.log
 coverage/
+# Private pilot media, inventory, credentials, and resumable worker database
+.pilot/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+# Local security application evidence and state
+.security/
+.security-watchdog/
+# Actual host service configs; only key-only examples belong in Git.
+security/deploy/worker.json
+security/deploy/web.json
+security/deploy/watchdog.json

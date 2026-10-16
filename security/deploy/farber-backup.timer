@@ -1,0 +1,11 @@
+[Unit]
+Description=Check Farber control-data backup schedule each minute
+
+[Timer]
+OnBootSec=30
+OnUnitInactiveSec=60
+AccuracySec=1
+Unit=farber-backup.service
+
+[Install]
+WantedBy=timers.target

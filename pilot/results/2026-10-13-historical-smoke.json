@@ -1,0 +1,182 @@
+{
+  "at": "2026-10-13T18:29:44.837Z",
+  "phase": "two-minute-smoke",
+  "cameraLabel": "1",
+  "recordingConfigurationEvidence": "2026-10-13-owner-upgrade.json",
+  "liveViewRequestsByPilot": 0,
+  "quiet": {
+    "verified": true,
+    "reason": "NO_EVENTS_IN_COMPLETE_HISTORY",
+    "pages": 30,
+    "overlaps": [],
+    "oldestEvent": 1791717786216
+  },
+  "requested": {
+    "start": "2026-10-13T18:08:00.000Z",
+    "end": "2026-10-13T18:10:00.000Z"
+  },
+  "results": [
+    {
+      "state": "partial",
+      "attempts": 2,
+      "requestedStart": 1791914880000,
+      "requestedEnd": 1791914940000,
+      "at": "2026-10-13T18:25:02.519Z",
+      "initialHttpStatus": 303,
+      "httpStatus": 200,
+      "actualTimestamp": 1791914880033,
+      "actualLength": null,
+      "redirects": 1,
+      "media": {
+        "sha256": "9f783af1c95055b896f3dc9886bdcd7c7f86740ca0cbe434a5244d1b75a8be2b",
+        "size": 11309551,
+        "readbackVerified": true
+      },
+      "probe": {
+        "durationSeconds": 60.117,
+        "width": 2560,
+        "height": 1440,
+        "codec": "h264",
+        "fps": 15,
+        "frameCount": 901,
+        "worstFrameGapSeconds": 0.0810000000000013,
+        "frameTimelineValid": true,
+        "decoded": true
+      },
+      "assessment": {
+        "verified": true,
+        "reasons": [],
+        "actualStart": 1791914880033,
+        "actualEnd": 1791914940150,
+        "measuredMs": 60117,
+        "startDeltaMs": 33,
+        "endDeltaMs": 150,
+        "complete": false,
+        "intervals": [
+          {
+            "start": 1791914880033,
+            "end": 1791914940000
+          }
+        ],
+        "gaps": [
+          {
+            "start": 1791914880000,
+            "end": 1791914880033
+          }
+        ],
+        "coveredMs": 59967,
+        "requestedMs": 60000
+      }
+    },
+    {
+      "state": "partial",
+      "attempts": 1,
+      "requestedStart": 1791914940000,
+      "requestedEnd": 1791915000000,
+      "at": "2026-10-13T18:27:22.312Z",
+      "initialHttpStatus": 303,
+      "httpStatus": 200,
+      "actualTimestamp": 1791914940057,
+      "actualLength": null,
+      "redirects": 1,
+      "media": {
+        "sha256": "67a7f8d1ee733b1b75daa37ebffc150ebfdb498fc86cc34bb395db7c7808af99",
+        "size": 11269492,
+        "readbackVerified": true
+      },
+      "probe": {
+        "durationSeconds": 60.051,
+        "width": 2560,
+        "height": 1440,
+        "codec": "h264",
+        "fps": 14.985014985014985,
+        "frameCount": 900,
+        "worstFrameGapSeconds": 0.08100000000000307,
+        "frameTimelineValid": true,
+        "decoded": true
+      },
+      "assessment": {
+        "verified": true,
+        "reasons": [],
+        "actualStart": 1791914940057,
+        "actualEnd": 1791915000108,
+        "measuredMs": 60051,
+        "startDeltaMs": 57,
+        "endDeltaMs": 108,
+        "complete": false,
+        "intervals": [
+          {
+            "start": 1791914940057,
+            "end": 1791915000000
+          }
+        ],
+        "gaps": [
+          {
+            "start": 1791914940000,
+            "end": 1791914940057
+          }
+        ],
+        "coveredMs": 59943,
+        "requestedMs": 60000
+      }
+    }
+  ],
+  "coverage": {
+    "intervals": [
+      {
+        "start": 1791914880033,
+        "end": 1791915000000
+      }
+    ],
+    "gaps": [
+      {
+        "start": 1791914880000,
+        "end": 1791914880033
+      }
+    ],
+    "coveredMs": 119967,
+    "requestedMs": 120000
+  },
+  "refresh": {
+    "at": "2026-10-13T18:25:49.187Z",
+    "liveExchange": true,
+    "persistedCredentialsReadByNewClient": true,
+    "priorExpiry": 1791926846052,
+    "processRestartTested": false
+  },
+  "workerRuns": [
+    {
+      "id": "5691a798-a423-434a-b95f-d511dfb94ab0",
+      "startedAt": "2026-10-13T18:22:39.123Z",
+      "pid": 84603
+    },
+    {
+      "id": "64ce1f25-0cec-4fef-abe3-c6686013095f",
+      "startedAt": "2026-10-13T18:25:00.700Z",
+      "pid": 85145
+    },
+    {
+      "id": "1998f0a9-4343-4adc-b884-abd456f01271",
+      "startedAt": "2026-10-13T18:27:20.705Z",
+      "pid": 85775
+    }
+  ],
+  "cleanWorkerRestart": "PASS: second queued request completed in a new local process after refresh",
+  "crashDuringTransfer": "NOT_TESTED",
+  "vendorPartial206": "NOT_OBSERVED",
+  "rateLimitAndTransientRetries": "UNIT_TESTS_ONLY",
+  "hostReviewRetry": "PASS: same job and timestamps requeued after official redirect destination reviewed",
+  "manualReview": {
+    "frames": "First, end of first clip, first of second clip inspected as separate derivatives",
+    "scene": "Monochrome grow-room overview; fan orientation changes, no person available for face-identification test",
+    "boundary": "Scene and fan position visually consistent across shared boundary",
+    "captureClock": "NOT_DEMONSTRATED: constant Generated-At overlay shows export times 18:25:02Z and 18:27:22Z, not requested 18:08 and 18:09 capture times",
+    "nativeAuthenticity": "NOT_DEMONSTRATED: preserved vendor-delivered watermarked bytes, SHA-256 is receipt integrity only"
+  },
+  "verdict": "QUIET_FOOTAGE_RETRIEVAL_DEMONSTRATED; EXACT_REQUEST_COVERAGE_NOT_PASSED",
+  "qualifiedPrimaryArchive": false,
+  "rawEvidence": {
+    "path": ".pilot/media-smoke/report.json",
+    "sha256": "76af087afad20ef3e8aff575e06c382d70e5ded5099ef686a440dbdab0a147b0"
+  }
+}

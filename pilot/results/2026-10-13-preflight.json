@@ -1,0 +1,17 @@
+{
+  "at": "2026-10-13T14:27:45.594Z",
+  "verdict": "BLOCKED",
+  "missing": [
+    "RING_CLIENT_ID",
+    "RING_CLIENT_SECRET",
+    "RING_HMAC_KEY",
+    "UPSTASH_REDIS_REST_URL or KV_REST_API_URL",
+    "UPSTASH_REDIS_REST_TOKEN or KV_REST_API_TOKEN"
+  ],
+  "mediaTools": {
+    "ffprobe": true,
+    "ffmpeg": true
+  },
+  "liveViewRequests": 0,
+  "footageRetrieved": 0
+}

@@ -1,0 +1,15 @@
+{
+  "organization": "East End Flower Farm Ltd.",
+  "location": "Farber Drive",
+  "mappingEvidence": "Owner supplied camera-to-room mapping in this task",
+  "cameras": [
+    {
+      "id": "ring-1",
+      "name": "Camera 1",
+      "room": "FLOWERING",
+      "model": "Indoor Cam 2K"
+    },
+    { "id": "ring-2", "name": "Camera 2", "room": "FRONT DOOR", "model": null },
+    { "id": "ring-3", "name": "Camera 3", "room": "FLOWERING", "model": null }
+  ]
+}

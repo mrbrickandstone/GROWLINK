@@ -1,0 +1,23 @@
+{
+  "at": "2026-10-13T18:15:57.109Z",
+  "aliases": [
+    {
+      "alias": "farber-growlink-dashboard.vercel.app",
+      "status": 200,
+      "deployment": "dpl_4DaYwKEpAvG6rG6vqbugBGsXL4KH",
+      "matchesOriginal": true
+    },
+    {
+      "alias": "farber-growlink-dashboard-marcos-projects-83f88565.vercel.app",
+      "status": 200,
+      "deployment": "dpl_4DaYwKEpAvG6rG6vqbugBGsXL4KH",
+      "matchesOriginal": true
+    },
+    {
+      "alias": "farber-growlink-dashboard-git-main-marcos-projects-83f88565.vercel.app",
+      "status": 200,
+      "deployment": "dpl_4DaYwKEpAvG6rG6vqbugBGsXL4KH",
+      "matchesOriginal": true
+    }
+  ]
+}

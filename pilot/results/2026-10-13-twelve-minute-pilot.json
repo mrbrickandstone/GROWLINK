@@ -1,0 +1,144 @@
+{
+  "at": "2026-10-13T18:35:30.245Z",
+  "cameraLabel": "1",
+  "phase": "12-minute-quiet-pilot",
+  "requestedStart": "2026-10-13T18:08:00.000Z",
+  "requestedEnd": "2026-10-13T18:20:00.000Z",
+  "liveViewRequestsByPilot": 0,
+  "quietChecks": [
+    {
+      "verified": true,
+      "reason": "NO_EVENTS_IN_COMPLETE_HISTORY",
+      "pages": 30,
+      "overlaps": [],
+      "oldestEvent": 1791717786216
+    },
+    {
+      "verified": true,
+      "reason": "NO_EVENTS_IN_COMPLETE_HISTORY",
+      "pages": 30,
+      "overlaps": [],
+      "oldestEvent": 1791717786216
+    }
+  ],
+  "samples": [
+    {
+      "requestedStart": "2026-10-13T18:08:00.000Z",
+      "requestedEnd": "2026-10-13T18:09:00.000Z",
+      "httpStatus": 200,
+      "redirectStatus": 303,
+      "actualStart": "2026-10-13T18:08:00.033Z",
+      "actualEnd": "2026-10-13T18:09:00.150Z",
+      "durationSeconds": 60.117,
+      "width": 2560,
+      "height": 1440,
+      "frames": 901,
+      "fps": 15,
+      "worstFrameGapSeconds": 0.0810000000000013,
+      "decoded": true,
+      "frameTimelineValid": true,
+      "bytes": 11309551,
+      "sha256": "9f783af1c95055b896f3dc9886bdcd7c7f86740ca0cbe434a5244d1b75a8be2b",
+      "startDeltaMs": 33,
+      "endDeltaMs": 150
+    },
+    {
+      "requestedStart": "2026-10-13T18:09:00.000Z",
+      "requestedEnd": "2026-10-13T18:10:00.000Z",
+      "httpStatus": 200,
+      "redirectStatus": 303,
+      "actualStart": "2026-10-13T18:09:00.057Z",
+      "actualEnd": "2026-10-13T18:10:00.108Z",
+      "durationSeconds": 60.051,
+      "width": 2560,
+      "height": 1440,
+      "frames": 900,
+      "fps": 14.985014985014985,
+      "worstFrameGapSeconds": 0.08100000000000307,
+      "decoded": true,
+      "frameTimelineValid": true,
+      "bytes": 11269492,
+      "sha256": "67a7f8d1ee733b1b75daa37ebffc150ebfdb498fc86cc34bb395db7c7808af99",
+      "startDeltaMs": 57,
+      "endDeltaMs": 108
+    },
+    {
+      "requestedStart": "2026-10-13T18:10:00.000Z",
+      "requestedEnd": "2026-10-13T18:15:00.000Z",
+      "httpStatus": 200,
+      "redirectStatus": 303,
+      "actualStart": "2026-10-13T18:10:00.015Z",
+      "actualEnd": "2026-10-13T18:15:00.212Z",
+      "durationSeconds": 300.197,
+      "width": 2560,
+      "height": 1440,
+      "frames": 4498,
+      "fps": 15,
+      "worstFrameGapSeconds": 0.1150000000000091,
+      "decoded": true,
+      "frameTimelineValid": true,
+      "bytes": 57010544,
+      "sha256": "0487501d08778b7c32a8e4aa7acba92c03f2eae37381a998ae4247bd049635bb",
+      "startDeltaMs": 15,
+      "endDeltaMs": 212
+    },
+    {
+      "requestedStart": "2026-10-13T18:15:00.000Z",
+      "requestedEnd": "2026-10-13T18:20:00.000Z",
+      "httpStatus": 200,
+      "redirectStatus": 303,
+      "actualStart": "2026-10-13T18:15:00.006Z",
+      "actualEnd": "2026-10-13T18:20:00.270Z",
+      "durationSeconds": 300.264,
+      "width": 2560,
+      "height": 1440,
+      "frames": 4500,
+      "fps": 15,
+      "worstFrameGapSeconds": 0.08200000000000074,
+      "decoded": true,
+      "frameTimelineValid": true,
+      "bytes": 56480912,
+      "sha256": "1724244c529934ed38ecf488ca3d2416eab59861b21d54fdee74048de5e7077a",
+      "startDeltaMs": 6,
+      "endDeltaMs": 270
+    }
+  ],
+  "coverage": {
+    "intervals": [
+      {
+        "start": 1791914880033,
+        "end": 1791915600000
+      }
+    ],
+    "gaps": [
+      {
+        "start": 1791914880000,
+        "end": 1791914880033
+      }
+    ],
+    "coveredMs": 719967,
+    "requestedMs": 720000
+  },
+  "boundaryOverlapMs": [
+    93,
+    93,
+    206
+  ],
+  "bytes": 136070499,
+  "quietHistoricalRetrieval": "PASS_FOR_TESTED_SAMPLES",
+  "exactRequestedCoverage": "FAIL: first 33 milliseconds of initial request not returned; no measured internal gaps",
+  "fullSourceQualification": "NOT_PASSED",
+  "nativeEvidence": "UNRESOLVED",
+  "captureClock": "Not established by static Generated-At export-time watermark",
+  "recovery": "Clean restart after refresh passed; actual crash test running separately",
+  "rawEvidence": [
+    {
+      "path": ".pilot/media-smoke/report.json",
+      "sha256": "76af087afad20ef3e8aff575e06c382d70e5ded5099ef686a440dbdab0a147b0"
+    },
+    {
+      "path": ".pilot/media-five-minute/report.json",
+      "sha256": "93b143e7196a14d97d49e34d1844ca8a571d967a08a2a33c022ce0e222989a2f"
+    }
+  ]
+}

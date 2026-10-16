@@ -1,0 +1,56 @@
+# Key-only reference. Use separate restricted web/worker/watchdog env files.
+SECURITY_DATA_DIR=/var/lib/farber
+SECURITY_HOST=127.0.0.1
+SECURITY_PORT=4318
+SECURITY_ORIGIN=https://security.example.invalid
+SECURITY_HEALTH_TOKEN=
+SECURITY_OIDC_ISSUER=
+SECURITY_OIDC_CLIENT_ID=
+SECURITY_OIDC_CLIENT_SECRET=
+SECURITY_OIDC_ACR=
+
+# Worker and original-download service: IAM role preferred, never browser credentials.
+SECURITY_S3_BUCKET=
+SECURITY_S3_REGION=us-east-1
+# Optional S3-compatible provider; qualify the exact API before use.
+SECURITY_S3_ENDPOINT=
+SECURITY_S3_PATH_STYLE=false
+# For a host without instance credentials, inject scoped credentials privately.
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+SECURITY_STORAGE_LOCK_APPROVED=false
+SECURITY_ENABLE_PHYSICAL_DELETION=false
+# Pause ingestion below reserve plus per-job headroom; warning at 2x, resume at 1.25x.
+SECURITY_MIN_FREE_BYTES=20000000000
+# Duplicate cache only; requires qualified independent immutable storage.
+SECURITY_ENABLE_CACHE_EVICTION=false
+SECURITY_CACHE_KEEP_HOURS=24
+# Full-object rechecks; qualify cadence, bandwidth and cost on the actual archive.
+SECURITY_ARCHIVE_VERIFY_HOURS=168
+
+# Approved Ring worker only; leave unset until dedicated access is commissioned.
+RING_CLIENT_ID=
+RING_CLIENT_SECRET=
+RING_HMAC_KEY=
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
+
+# Worker sends here; watchdog runs on a separate host behind TLS.
+SECURITY_WATCHDOG_URL=
+SECURITY_WATCHDOG_TOKEN=
+SECURITY_WATCHDOG_DIR=/var/lib/farber-watchdog
+SECURITY_WATCHDOG_HOST=127.0.0.1
+SECURITY_WATCHDOG_PORT=4320
+SECURITY_EXPECTED_COMPONENTS=archive-worker
+SECURITY_ALERT_WEBHOOK=
+SECURITY_ALERT_TOKEN=
+# Independent probe: same dedicated health token as web SECURITY_HEALTH_TOKEN.
+SECURITY_CONTROL_HEALTH_URL=
+SECURITY_CONTROL_HEALTH_TOKEN=
+# Optional secondary monitor, separate provider/failure domain; POST accepts bearer.
+# Separate credentials from both the worker heartbeat and dashboard health token.
+SECURITY_DEADMAN_URL=
+SECURITY_DEADMAN_TOKEN=
+# Optional control-data backup status directory; configure after supervised tests.
+SECURITY_BACKUP_STATE_DIR=
+SECURITY_BACKUP_MAX_AGE_MINUTES=120

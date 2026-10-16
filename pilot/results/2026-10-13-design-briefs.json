@@ -1,0 +1,22 @@
+{
+  "reviewedAt": "2026-10-13T18:00:10.534Z",
+  "sources": [
+    {
+      "path": "/Users/marcosribeiro/Downloads/Farber_Security_Command_Center_Architecture_2026-10-13.pdf",
+      "pages": 8,
+      "bytes": 92783,
+      "sha256": "8d40c72a4673a0c6b805875e33ead38fe320f609ca96374d0fb779a39e7e0105",
+      "review": "full text plus rendered relevant diagrams and tables"
+    },
+    {
+      "path": "/Users/marcosribeiro/Downloads/Farber_OCM_Camera_Feasibility_Study_2026-10-13.pdf",
+      "pages": 10,
+      "bytes": 101641,
+      "sha256": "34568db4fbb0ac76abbad3f315093b19e02926f3f367391fb2b69f09a4253db1",
+      "review": "full text plus rendered relevant diagrams and tables"
+    }
+  ],
+  "authority": "Design brief material; direct user instructions govern actions.",
+  "deploymentChanges": 0,
+  "purchases": 0
+}

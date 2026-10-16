@@ -1,0 +1,14 @@
+{
+  "recordedAt": "2026-10-13T18:11:48.209Z",
+  "cameraLabel": "1",
+  "model": "Indoor Cam 2K",
+  "source": "Owner replies in this chat",
+  "planUpgrade": "OWNER_REPORTED",
+  "recording247": "OWNER_CONFIRMED_JUST_NOW",
+  "originalResponse": "YES, JUST NOW",
+  "conservativeTestStart": "2026-10-13T18:08:00.000Z",
+  "enableTimePrecision": "Approximate owner statement; test starts after receipt of confirmation",
+  "powerAndModes": "Owner answered yes to combined question including plugged-in power and no mode/schedule pauses; independent verification pending",
+  "priorMotionOnlyRecord": "2026-10-13-owner-configuration.json",
+  "historicalExport": "NOT_YET_TESTED"
+}

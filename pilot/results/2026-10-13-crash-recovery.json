@@ -1,0 +1,108 @@
+{
+  "at": "2026-10-13T18:52:07.672Z",
+  "cameraLabel": "1",
+  "result": "PASS",
+  "interruption": {
+    "signal": "SIGKILL",
+    "pid": 86957,
+    "observedBytes": 86002,
+    "at": "2026-10-13T18:35:16.279Z"
+  },
+  "leaseExpires": "2026-10-13T18:45:07.517Z",
+  "restartedWorker": {
+    "pid": 88435,
+    "startedAt": "2026-10-13T18:46:07.361Z",
+    "finishedAt": "2026-10-13T18:46:28.155Z",
+    "exitCode": 0
+  },
+  "sameRequestAndJobKeyVerified": true,
+  "normalLeaseExpiryUsed": true,
+  "partialFiles": [
+    {
+      "bytes": 86002,
+      "sha256": "20f2ea104f4c6e3cfa90f096f66db78deaa4fb5a4f9c7eef83a6d2fd18c77e41",
+      "retained": true,
+      "creditedAsCoverage": false
+    }
+  ],
+  "quiet": {
+    "verified": true,
+    "reason": "NO_EVENTS_IN_COMPLETE_HISTORY",
+    "pages": 30,
+    "overlaps": [],
+    "oldestEvent": 1791717786216
+  },
+  "samples": [
+    {
+      "run": "media-crash",
+      "jobId": "f01b2342691a2457782c3a12c97497c7426f14b42e911d9c68c55fe4188a45d4",
+      "requestedStart": "2026-10-13T18:20:00.000Z",
+      "requestedEnd": "2026-10-13T18:21:00.000Z",
+      "actualStart": "2026-10-13T18:20:00.062Z",
+      "actualEnd": "2026-10-13T18:21:00.116Z",
+      "durationSeconds": 60.054,
+      "frames": 900,
+      "width": 2560,
+      "height": 1440,
+      "fps": 15,
+      "maxFrameGapSeconds": 0.08100000000000307,
+      "decoded": true,
+      "frameTimelineValid": true,
+      "bytes": 11186501,
+      "sha256": "5ddd6f54fe1af5f80417355c28cf3fcae535e53b5e47d31c01ac1898893a38bd",
+      "readbackVerifiedAt": "2026-10-13T18:52:07.581Z",
+      "attempts": 2,
+      "state": "partial",
+      "initialHttpStatus": 303,
+      "httpStatus": 200
+    },
+    {
+      "run": "media-crash",
+      "jobId": "2c8a3fd993fa047953940882162719a0800e029f99ca8510719905d758b22699",
+      "requestedStart": "2026-10-13T18:21:00.000Z",
+      "requestedEnd": "2026-10-13T18:22:00.000Z",
+      "actualStart": "2026-10-13T18:21:00.020Z",
+      "actualEnd": "2026-10-13T18:22:00.139Z",
+      "durationSeconds": 60.119,
+      "frames": 901,
+      "width": 2560,
+      "height": 1440,
+      "fps": 15,
+      "maxFrameGapSeconds": 0.08099999999999596,
+      "decoded": true,
+      "frameTimelineValid": true,
+      "bytes": 11139531,
+      "sha256": "59d64590f9c113481b7bee1c9f57f6f9707244fd9c540cd965cad15270263867",
+      "readbackVerifiedAt": "2026-10-13T18:52:07.589Z",
+      "attempts": 1,
+      "state": "partial",
+      "initialHttpStatus": 303,
+      "httpStatus": 200
+    }
+  ],
+  "coverage": {
+    "intervals": [
+      {
+        "start": 1791915600062,
+        "end": 1791915720000
+      }
+    ],
+    "gaps": [
+      {
+        "start": 1791915600000,
+        "end": 1791915600062
+      }
+    ],
+    "coveredMs": 119938,
+    "requestedMs": 120000
+  },
+  "rawEvidence": {
+    "path": ".pilot/media-crash/report.json",
+    "sha256": "04104ee39ce68934d2004554a5473dd36bb5f07a23405055f1782a6c7ac70a52",
+    "crashReceiptSha256": "e92a2da725dbba37c621f6ce042fe99cf24e99ca5ebe9737b5a184d234971f6e"
+  },
+  "limits": [
+    "Local export worker crash and disk-backed queue recovery only; no cloud cold-restart claim.",
+    "Partial individual timing windows remain visible; successful recovery does not imply exact request coverage."
+  ]
+}

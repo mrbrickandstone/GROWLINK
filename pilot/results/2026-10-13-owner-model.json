@@ -1,0 +1,22 @@
+{
+  "recordedAt": "2026-10-13T17:48:13Z",
+  "cameraName": "1",
+  "model": "Indoor Cam 2K",
+  "modelEvidence": "User response in this conversation: INDOOR CAM 2K",
+  "modelEvidenceType": "OWNER_REPORTED",
+  "vendorEligibility": "LISTED_AS_ELIGIBLE_FOR_24_7_RECORDING",
+  "vendorSource": "https://ring.com/support/articles/wtr7r/24-7-recording-security-cams",
+  "vendorSourceCheckedOn": "2026-10-13",
+  "remainingConfigurationEvidence": [
+    "continuous power",
+    "Ring Protect and applicable 24/7 Recording add-on",
+    "24/7 Recording selected and camera recording enabled",
+    "when 24/7 recording began",
+    "Home/Away/Disarmed mode and schedule do not pause recording during test window"
+  ],
+  "briefs": "USER_WILL_ATTACH",
+  "qualification": "NOT_PASSED",
+  "historicalMediaRequests": 0,
+  "footageRetrieved": 0,
+  "liveViewRequests": 0
+}
