@@ -37,6 +37,8 @@ function createServer({
   authenticate,
 }) {
   const auth = createAuth(store, env, origin);
+  if (env.SECURITY_HEALTH_TOKEN && env.SECURITY_HEALTH_TOKEN.length < 32)
+    throw error("HEALTH_TOKEN_REQUIRED", 503);
   const reviewActor = {
     id: "local-read-only-review",
     name: "Local review",
@@ -68,7 +70,30 @@ function createServer({
         throw error("CROSS_SITE_REQUEST_DENIED", 403);
       const url = new URL(req.url, origin),
         route = url.pathname;
-      if (route === "/healthz")
+      if (route === "/healthz/ready" && req.method === "GET") {
+        if (!env.SECURITY_HEALTH_TOKEN) throw error("NOT_FOUND", 404);
+        const { timingEqual } = require("./watchdog.cjs");
+        if (
+          !timingEqual(
+            req.headers.authorization,
+            "Bearer " + env.SECURITY_HEALTH_TOKEN,
+          )
+        )
+          throw error("HEALTH_ACCESS_DENIED", 401);
+        const result = require("./health.cjs").readiness(store, {
+          nonce: url.searchParams.get("nonce"),
+          token: env.SECURITY_HEALTH_TOKEN,
+          signInConfigured: !review && auth.configured,
+        });
+        return json(
+          res,
+          result.payload.databaseReadable && result.payload.signInConfigured
+            ? 200
+            : 503,
+          result,
+        );
+      }
+      if (route === "/healthz" && req.method === "GET")
         return json(res, 200, {
           service: "farber-security-control",
           now: store.now(),

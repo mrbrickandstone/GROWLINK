@@ -3,6 +3,7 @@ SECURITY_DATA_DIR=/var/lib/farber
 SECURITY_HOST=127.0.0.1
 SECURITY_PORT=4318
 SECURITY_ORIGIN=https://security.example.invalid
+SECURITY_HEALTH_TOKEN=
 SECURITY_OIDC_ISSUER=
 SECURITY_OIDC_CLIENT_ID=
 SECURITY_OIDC_CLIENT_SECRET=
@@ -43,3 +44,10 @@ SECURITY_WATCHDOG_PORT=4320
 SECURITY_EXPECTED_COMPONENTS=archive-worker
 SECURITY_ALERT_WEBHOOK=
 SECURITY_ALERT_TOKEN=
+# Independent probe: same dedicated health token as web SECURITY_HEALTH_TOKEN.
+SECURITY_CONTROL_HEALTH_URL=
+SECURITY_CONTROL_HEALTH_TOKEN=
+# Optional secondary monitor, separate provider/failure domain; POST accepts bearer.
+# Separate credentials from both the worker heartbeat and dashboard health token.
+SECURITY_DEADMAN_URL=
+SECURITY_DEADMAN_TOKEN=

@@ -8,6 +8,7 @@
   "SECURITY_HOST": "127.0.0.1",
   "SECURITY_PORT": "4318",
   "SECURITY_ORIGIN": "https://security.example.invalid",
+  "SECURITY_HEALTH_TOKEN": "",
   "SECURITY_OIDC_ISSUER": "",
   "SECURITY_OIDC_CLIENT_ID": "",
   "SECURITY_OIDC_CLIENT_SECRET": ""

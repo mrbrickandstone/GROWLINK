@@ -18,7 +18,7 @@ The [Ring pilot](../docs/security/PILOT_REPORT.md) demonstrated quiet historical
 - Per-camera backlog and estimated source-window monitoring, stable transactional scheduling cursors, scoped status views and watchdog escalation. Missing actual intervals remain visible even when jobs complete; see [transfer monitoring](../docs/security/TRANSFER_MONITORING.md).
 - Consistent SQLite control-state backups, restic encryption, exact-snapshot readback and quarantined restores; original footage remains in its separate archive. See [backup recovery](deploy/BACKUP_RECOVERY.md).
 - Hash-chained audit history, inspection records and measured backup-power records. A reported eight-hour test requires an elapsed test interval and continuity assertion; it is not inferred from equipment labels.
-- A separate watchdog process: 30-second checking, 90-second heartbeat timeout, durable incidents and dispatch retries. Provider acceptance and recipient receipt are separate. Five-minute delivery has **not** been demonstrated.
+- A separate watchdog process: 30-second checking, 90-second heartbeat timeout, durable incidents and dispatch retries. Optional signed dashboard-readiness probing and a secondary-monitor pulse detect additional failure paths. Provider acceptance and recipient receipt are separate. Five-minute delivery has **not** been demonstrated; see the [monitoring handoff](deploy/WATCHDOG.md).
 
 ## Run a private local review
 
@@ -47,7 +47,7 @@ Once legal/vendor review approves the source policy, the implementation retains 
 
 The short camera-1 sample averages approximately 1.5 Mbit/s. Three cameras at that same rate would produce roughly 4.4 decimal TB over 90 days, before derivatives, redundancy, overhead and holds. This is an illustration, not a measured three-camera requirement or purchase quantity.
 
-Run the watchdog on a **different host/failure domain**, with a private HTTPS heartbeat endpoint, a notification provider and named recipients. Add an external deadman monitor for watchdog silence. Configure an escalation path and record recipient receipt during commissioning. A worker heartbeat does not prove camera capture: the Ring export readiness delay cannot establish a five-minute capture-failure guarantee. A supported capture-health signal or qualified local recorder remains necessary to settle that gate.
+Run the watchdog on a **different host/failure domain**, with a private HTTPS heartbeat endpoint, a notification provider and named recipients. Configure the prepared [private dashboard probe and secondary-monitor pulse](deploy/WATCHDOG.md). The secondary service must detect watchdog silence using a separate notification path; both integrations remain inactive without their private configuration. Configure an escalation path and record recipient receipt during commissioning. A worker heartbeat does not prove camera capture: the Ring export readiness delay cannot establish a five-minute capture-failure guarantee. A supported capture-health signal or qualified local recorder remains necessary to settle that gate.
 
 The [systemd templates](deploy/) provide separate worker, web and watchdog units. They have not been installed. The web service expects TLS termination at the configured origin and OIDC; keep it private until commissioned. Existing Vercel production aliases and environment scopes remain unchanged. No billable resources or subscriptions were created by this implementation.
 

@@ -19,6 +19,16 @@ class Watchdog {
     store,
     { expected = ["archive-worker"], startedAt = store.now(), notify } = {},
   ) {
+    if (
+      !Array.isArray(expected) ||
+      !expected.length ||
+      expected.length > 8 ||
+      new Set(expected).size !== expected.length ||
+      expected.some(
+        (c) => typeof c !== "string" || !/^[a-z][a-z0-9-]{0,47}$/.test(c),
+      )
+    )
+      throw error("INVALID_EXPECTED_COMPONENTS");
     this.store = store;
     this.expected = expected;
     this.notify = notify;

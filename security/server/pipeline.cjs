@@ -8,6 +8,10 @@ const DAY = 86400000,
 const ADVERTISED_HISTORY_DAYS = 14,
   BACKLOG_WARNING = 900000;
 const FAULT_CODES = [
+  "CONTROL_UNREACHABLE",
+  "CONTROL_HEALTH_INVALID",
+  "CONTROL_DATABASE_FAILED",
+  "CONTROL_SIGN_IN_UNCONFIGURED",
   "DISK_SPACE_LOW",
   "DISK_SPACE_WARNING",
   "DISK_CAPACITY_UNKNOWN",
@@ -29,6 +33,13 @@ const FAULT_CODES = [
   "ARCHIVE_VERIFICATION_SCHEDULER_FAILED",
 ];
 const FAULT_LABELS = {
+  CONTROL_UNREACHABLE: "Security dashboard endpoint is unreachable",
+  CONTROL_HEALTH_INVALID:
+    "Security dashboard returned an invalid or stale health response",
+  CONTROL_DATABASE_FAILED:
+    "Security dashboard cannot read its control database",
+  CONTROL_SIGN_IN_UNCONFIGURED:
+    "Security dashboard named sign-in is not configured",
   DISK_SPACE_LOW: "Transfers paused for low disk space",
   DISK_SPACE_WARNING: "Local storage running low",
   DISK_CAPACITY_UNKNOWN: "Disk capacity could not be checked",

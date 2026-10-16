@@ -73,7 +73,7 @@ sudo launchctl bootstrap system /Library/LaunchDaemons/com.farber.security.worke
 sudo launchctl bootstrap system /Library/LaunchDaemons/com.farber.security.web.plist
 ```
 
-Do not install the watchdog on this Mac; use the existing Linux watchdog unit on the external host with its own credentials, TLS endpoint and notification recipient configuration. Actual end-to-end receipt within five minutes remains untested. Export readiness lag also means worker heartbeats alone cannot prove five-minute camera-failure detection.
+Do not install the watchdog on this Mac; use the existing Linux watchdog unit on the external host with its own credentials, TLS endpoint and notification recipient configuration. Follow the [independent monitoring handoff](WATCHDOG.md) for the private signed web-readiness probe and optional secondary-monitor pulse. Actual end-to-end receipt within five minutes remains untested. Export readiness lag also means worker heartbeats alone cannot prove five-minute camera-failure detection.
 
 ## Commissioning and rollback
 

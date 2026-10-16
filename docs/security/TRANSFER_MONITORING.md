@@ -74,6 +74,8 @@ The worker sends only allowlisted fault codes with its existing authenticated he
 
 The five-minute objective concerns **actual recipient delivery**. Polling/retry timings and fixture acceptance do not demonstrate that objective. The new tests observe dispatch/retry promptly after a simulated fault, while recipient receipt remains unconfirmed. The five-minute historical readiness delay and 15-minute transfer target also do not establish camera-failure detection within five minutes. A qualified capture-health signal, external watchdog host, real recipients and measured receipt for each required failure scenario remain necessary.
 
+The optional [signed dashboard probe and secondary-monitor pulse](../../security/deploy/WATCHDOG.md) extend this path: dashboard failures are independently observed, and primary-notification failure withholds the secondary pulse. Both require private configuration and real provider/recipient commissioning. A worker credential cannot forge the reserved dashboard observation. The secondary pulse confirms monitoring-cycle completion, not healthy cameras or actual alert delivery.
+
 ## Verification and remaining work
 
 Nine additional tests cover saved scheduling across process/database reopen; transactional rollback and policy/configuration changes; visible old gaps outside the scheduling window; partial completed jobs; local-only versus independent preservation; missing/future readback timestamps; shorter/unconfirmed history settings; queue counts beyond the UI's 100-job display; 90-day targets with older holds; watchdog escalation/retry identity across restart; real worker fault observations without Ring access; and API camera/inspector scoping.
