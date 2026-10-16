@@ -14,6 +14,7 @@ function options(env = {}) {
   };
 }
 function eligible(store, s, keepMs) {
+  if (store.recoveryPending()) return false;
   if (!Number.isSafeInteger(keepMs) || keepMs < 3600000) return false;
   if (
     !s ||

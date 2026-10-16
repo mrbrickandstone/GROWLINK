@@ -66,6 +66,11 @@ function fail(e) {
 function allowed(action) {
   const u = session?.user;
   if (!u || u.readOnly) return false;
+  if (
+    data?.recovery?.pending &&
+    ["export", "delete", "release", "grant", "playback"].includes(action)
+  )
+    return false;
   const map = {
     configure: ["owner", "technician"],
     playback: ["owner", "operator", "inspector"],
@@ -233,6 +238,7 @@ function audit() {
 }
 async function render() {
   if (!data) return;
+  $("#recovery").hidden = !data.recovery?.pending;
   playbackPoll++;
   $("#pageTitle").textContent = titles[view];
   document.querySelectorAll("nav button").forEach((b) => {
@@ -357,6 +363,7 @@ async function reload() {
         ? "Sign in with your named account to access security footage."
         : "Named sign-in is not configured. No security footage is exposed without authentication.";
   if (!session.user) {
+    $("#recovery").hidden = true;
     $("#content").innerHTML =
       '<section class="panel"><h2>Secure access required</h2><p>Connect the configured identity provider and provision a named account.</p></section>';
     return;

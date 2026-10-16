@@ -8,6 +8,7 @@ const DAY = 86400000,
 const ADVERTISED_HISTORY_DAYS = 14,
   BACKLOG_WARNING = 900000;
 const FAULT_CODES = [
+  "RECOVERY_REVIEW_REQUIRED",
   "CONTROL_UNREACHABLE",
   "CONTROL_HEALTH_INVALID",
   "CONTROL_DATABASE_FAILED",
@@ -33,6 +34,8 @@ const FAULT_CODES = [
   "ARCHIVE_VERIFICATION_SCHEDULER_FAILED",
 ];
 const FAULT_LABELS = {
+  RECOVERY_REVIEW_REQUIRED:
+    "Recovered control data awaits review; transfers and releases are paused",
   CONTROL_UNREACHABLE: "Security dashboard endpoint is unreachable",
   CONTROL_HEALTH_INVALID:
     "Security dashboard returned an invalid or stale health response",
@@ -86,6 +89,7 @@ function readyThrough(c, now) {
   );
 }
 function scheduleRing(store, { batchPerCamera = 120 } = {}) {
+  if (store.recoveryPending()) return 0;
   if (!policyApproved(store)) return 0;
   if (
     !Number.isSafeInteger(batchPerCamera) ||

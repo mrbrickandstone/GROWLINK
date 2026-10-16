@@ -156,6 +156,31 @@ test("real restic encrypted repository survives synthetic host loss and rejects 
     db.close();
   }
   assert.throws(() => new Store(recovered), /RECOVERY_REVALIDATION_REQUIRED/);
+  const candidate = path.join(root, "recovery-review");
+  const prepared =
+    await require("../../security/server/recovery.cjs").prepareRecovery(
+      recovered,
+      checkpoint,
+      candidate,
+      "SYNTHETIC-HOST-LOSS-REVIEW",
+    );
+  assert.equal(prepared.productionReady, false);
+  const disarmed = new Store(candidate);
+  try {
+    assert.equal(disarmed.recoveryPending(), true);
+    assert.equal(
+      disarmed.db.prepare("SELECT count(*) AS n FROM sessions").get().n,
+      0,
+    );
+    assert.equal(
+      disarmed.all("users").every((u) => !u.enabled),
+      true,
+    );
+    assert.equal(disarmed.auditIntegrity().valid, true);
+    assert.equal(disarmed.all("exports")[0].state, "recovery-suspended");
+  } finally {
+    disarmed.close();
+  }
   await assert.rejects(restore(config, checkpoint, recovered), /EEXIST/);
   const wrongPassword = path.join(root, "wrong-password");
   fs.writeFileSync(wrongPassword, crypto.randomBytes(48).toString("base64"), {

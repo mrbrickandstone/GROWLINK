@@ -197,6 +197,7 @@ async function transfer(
   job,
   { ring, disk = new DiskGuard(store.root) } = {},
 ) {
+  if (store.recoveryPending()) throw error("RECOVERY_REVIEW_REQUIRED", 409);
   disk.assertSpace(JOB_HEADROOM);
   prepareDirectories(store);
   const p = job.payload,
@@ -400,6 +401,7 @@ async function buildPlayback(
   job,
   { disk = new DiskGuard(store.root) } = {},
 ) {
+  if (store.recoveryPending()) throw error("RECOVERY_REVIEW_REQUIRED", 409);
   const s = buildable(store, job.payload.segmentId);
   if (store.playbackReady(s)) {
     store.finish(job, "complete");
@@ -478,6 +480,7 @@ async function reconcile(store, archive) {
   return { checked, invalid };
 }
 async function reconcileHolds(store, archive) {
+  if (store.recoveryPending()) return;
   if (!archive.independent) return;
   for (const h of store.all("holds").filter((h) => h.state !== "released")) {
     const segments = store

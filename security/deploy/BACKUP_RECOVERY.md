@@ -1,6 +1,6 @@
 # Control-data backup and recovery
 
-Implemented and locally tested October 15, 2026. This protects the archive index and control state; **original footage requires its separate, independently verified archive**. No off-site backup account, recurring schedule or recovery service has been commissioned.
+Implemented and locally tested October 15–16, 2026. This protects the archive index and control state; **original footage requires its separate, independently verified archive**. No off-site backup account, recurring schedule or recovery service has been commissioned.
 
 ## What is preserved
 
@@ -48,18 +48,41 @@ node security/backup.cjs restore /private/path/backup.json /private/path/trusted
 
 Only the known control files are requested. Restic restores with overwrite disabled, then the application verifies the manifest hash, inventory, private file permissions, exact hashes, database integrity, audit history and evidence signatures. An invalid restore is discarded; existing source and target data are never overwritten. [restic restore behavior](https://restic.readthedocs.io/en/stable/050_restore.html).
 
-The restored directory contains `RECOVERY_REQUIRED`. The application store rejects it **before opening the database**, including worker, dashboard and provisioning CLI. There is no automatic activation command. Do not remove the marker as a shortcut. Recovery commissioning must first:
+The restored directory contains `RECOVERY_REQUIRED`. The application store rejects it **before opening the database**, including worker, dashboard and provisioning CLI. Do not remove that marker as a shortcut. Use the preparation command below to create a separate copy for controlled review. Returning to normal operation still requires:
 
 1. Reconcile the restored snapshot and external checkpoint with the newest trustworthy records; recover changes since the snapshot or explicitly identify the loss interval. A valid older snapshot is not proof that it is the newest.
 2. Re-read every original from independent storage by pinned version and checksum; reconstruct missing receipts and distinguish missing originals from missing derivatives. Local-only footage is not recovered by this backup.
 3. Revalidate identities, revoke old sessions and inspector grants, re-review pending evidence/deletion requests and source-policy decisions, and reconcile all holds, including holds created after the snapshot.
 4. Recover/reconcile job leases and source timestamps, rebuild derivatives, replace invalid credentials through their separate recovery process, and observe worker health and actual alert receipt before controlled activation.
 
-The restore preserves the historical database unchanged for review. The activation/migration workflow is still required; this feature does not claim unattended host-loss failover, a complete footage recovery or OCM compliance.
+The restore preserves the historical database unchanged. The preparation migration below is implemented; release from recovery mode still requires a controlled reconciliation/activation workflow. This feature does not claim unattended host-loss failover, complete footage recovery or OCM compliance.
+
+## Prepare a separate recovery review copy
+
+On a clean host, with the verified restored directory and its independently held checkpoint:
+
+```sh
+node security/recovery.cjs prepare /private/path/new-recovery /private/path/trusted-checkpoint.json /private/path/new-review-data RECOVERY-CASE-REFERENCE
+```
+
+The nonsecret reference identifies the recovery case; it is not a claim that the review has passed. The command accepts a new absolute destination outside the restored directory. It verifies the checkpoint's manifest hash, creation time and audit head/count, copies only the known control files, verifies the copied bytes, and migrates the copy in one SQLite transaction. It rechecks the original snapshot unchanged. Existing targets are never overwritten, including interrupted attempts.
+
+The migration:
+
+- Revokes every session, disables all restored users, revokes inspector grants, suspends evidence requests and invalidates pending deletion approvals. Old signatures remain preserved and verified; suspended export records cannot authorize original downloads.
+- Preserves historical audit entries, holds, original hashes/version receipts, request timestamps and scheduling cursors. Prior values of changed records and unfinished jobs remain in private recovery history. Old session secrets are removed from the candidate rather than copied to that history.
+- Disables camera exports and Ring policy flags, pauses unfinished jobs and clears their old leases. It removes stale health/access/check observations. All surviving segments lose verification credit and derivative pointers until fresh archive readback; old retention-protection assertions are also cleared.
+- Installs a persistent recovery guard, appends an audit entry and writes a private report. A database/key/signature check and file/directory flush precede removal of the candidate's startup marker. A crash before publication leaves the candidate quarantined. The original restored snapshot keeps its marker permanently.
+
+Point a **private review instance** at the new review-data directory. Existing named accounts cannot log in until a local administrator separately revalidates and provisions them. Loopback `--review` remains read-only. The dashboard shows a recovery warning. Normal camera transfers, derivative generation, evidence releases, inspector grants, hold release, cache removal and deletion remain blocked even if their environment/configuration switches are enabled. New investigation holds and inspection records can be recorded by freshly provisioned authorized users; adding a hold is not proof of source/archive protection.
+
+An explicitly configured worker can perform the existing durable archive-readback jobs in recovery mode. Use only the approved archive endpoint and scoped read credentials; the migration itself makes no network request and obtains no credentials. Reads can consume provider bandwidth. Successful byte checks restore only verified footage coverage. They do not restore retention-proof flags, permissions, policy approval or normal operation. Missing objects remain visible and do not trigger a new Ring export. The worker reports `RECOVERY_REVIEW_REQUIRED` through its fault path; actual alert delivery is still uncommissioned.
+
+The report keeps `newestSnapshotVerified`, `postSnapshotChangesReconciled` and `productionReady` false. The software cannot infer holds or other decisions made after the backup. No command currently releases this guard: retain the source snapshot and candidate report, reconcile the items above and implement/commission the reviewed activation decision before resuming service. Do not edit the database or remove guard records to bypass it. Preparing another recovery from an already prepared recovery snapshot is explicitly rejected pending a reviewed recovery-chain policy.
 
 ## Reproducible verification
 
-`npm test` includes consistent-WAL copying during concurrent writes; missing/wrong signing key and signature/audit corruption rejection; trusted-checkpoint, inventory/hash and symlink rejection; fresh pre-key backup; refusal to start restored workers/CLI; private config/credential isolation; and partial restic failure cleanup without secret output.
+`npm test` includes consistent-WAL copying during concurrent writes; missing/wrong signing key and signature/audit corruption rejection; trusted-checkpoint, inventory/hash and symlink rejection; fresh pre-key backup; refusal to start restored workers/CLI; private config/credential isolation; and partial restic failure cleanup without secret output. Eight recovery-preparation scenarios add command output/privacy, disarmed-state migration, unchanged source/signature/history checks, guarded operations, fresh readback, a real recovery worker, actual SIGKILL after migration, unsafe-input rejection and HTTP enforcement.
 
 Run the separate actual encryption/recovery drill with a verified binary:
 
@@ -67,4 +90,4 @@ Run the separate actual encryption/recovery drill with a verified binary:
 FARBER_TEST_RESTIC=/absolute/path/to/restic node --test test/security/backup-restic.drill.cjs
 ```
 
-The drill uses only temporary synthetic records and a randomly generated local password. It creates an encrypted repository, backs up and reads back, runs `check --read-data`, removes the synthetic source database/key to simulate host loss, restores exact records/key/signatures, rejects a wrong password and an altered repository pack, and confirms the recovered database cannot start a worker. It contacts no provider and removes its disposable data. This is a local software recovery test, not a Southampton or off-site commissioning result.
+The drill uses only temporary synthetic records and a randomly generated local password. It creates an encrypted repository, backs up and reads back, runs `check --read-data`, removes the synthetic source database/key to simulate host loss, restores exact records/key/signatures, rejects a wrong password and an altered repository pack, and confirms the raw restored database cannot start a worker. It then prepares a separate recovery copy and verifies disabled users, revoked sessions, suspended exports and valid audit history. It contacts no provider and removes its disposable data. This is a local software recovery test, not a Southampton or off-site commissioning result.

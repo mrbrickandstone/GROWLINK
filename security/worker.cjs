@@ -45,6 +45,7 @@ async function beat() {
   if (activeJob) store.renew(activeJob);
   const capacity = disk.inspect(activeJob ? 0 : JOB_HEADROOM);
   const faultCodes = [];
+  if (store.recoveryPending()) faultCodes.push("RECOVERY_REVIEW_REQUIRED");
   if (cacheFault) faultCodes.push("CACHE_MAINTENANCE_FAILED");
   try {
     if (!stopped) scheduleVerification(store, verificationConfig);
@@ -158,7 +159,10 @@ for (const s of ["SIGTERM", "SIGINT"])
   reconcileCacheState(store);
   await beat();
   let ring;
-  if (store.get("policy", "ring")?.automatedExportsApproved)
+  if (
+    !store.recoveryPending() &&
+    store.get("policy", "ring")?.automatedExportsApproved
+  )
     ring = require("../lib/ring.cjs").client(process.env);
   do {
     await cacheMaintenance();

@@ -35,6 +35,7 @@ function playbackStatus(store, actor, id) {
   };
 }
 function queuePlayback(store, actor, id) {
+  if (store.recoveryPending()) throw error("RECOVERY_REVIEW_REQUIRED", 409);
   if (actor?.readOnly) throw error("REVIEW_IS_READ_ONLY", 403);
   if (!store.user(actor?.id)) throw error("NAMED_USER_REQUIRED", 403);
   actor = { ...actor, externalAuthenticated: true };
@@ -84,6 +85,7 @@ function authorizedRequest(store, id) {
   throw error("PLAYBACK_REQUEST_EXPIRED_OR_REVOKED", 409);
 }
 async function processPlayback(store, archive, job, { disk } = {}) {
+  if (store.recoveryPending()) throw error("RECOVERY_REVIEW_REQUIRED", 409);
   const id = job.payload.segmentId;
   const { segment } = authorizedRequest(store, id);
   if (store.playbackReady(segment)) {

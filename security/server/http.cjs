@@ -164,6 +164,7 @@ function createServer({
           inspector = actor.role === "inspector";
         return json(res, 200, {
           cameras,
+          recovery: { pending: store.recoveryPending() },
           holds: inspector
             ? []
             : store.all("holds").filter((h) => ids.includes(h.cameraId)),
@@ -269,6 +270,8 @@ function createServer({
           );
           if (
             !exportRecord ||
+            exportRecord.state !== "complete" ||
+            exportRecord.recoverySuspendedAt ||
             exportRecord.createdBy !== actor.id ||
             !exportRecord.segmentIds?.includes(id)
           )

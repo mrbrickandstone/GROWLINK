@@ -117,7 +117,14 @@ function inspectDatabase(root) {
       .prepare("SELECT data FROM records WHERE kind='exports'")
       .iterate()) {
       const record = JSON.parse(row.data);
-      if (record.state !== "complete") continue;
+      if (
+        record.state !== "complete" &&
+        !(
+          record.state === "recovery-suspended" &&
+          record.recoveryPreviousState === "complete"
+        )
+      )
+        continue;
       if (!key) fail("BACKUP_SIGNING_KEY_MISSING");
       const exportedKey = crypto.createPublicKey(record.publicKey);
       if (

@@ -153,8 +153,17 @@ class Store {
       .get(digest(id), kind);
     return row && row.expires > this.now() ? JSON.parse(row.data) : null;
   }
+  recoveryPending() {
+    const record = this.get("recovery", "control");
+    return !!record && record.state !== "released";
+  }
   authorize(actor, action, cameraId, w) {
     if (!actor) throw error("SIGN_IN_REQUIRED", 401);
+    if (
+      this.recoveryPending() &&
+      ["export", "delete", "release", "grant"].includes(action)
+    )
+      throw error("RECOVERY_REVIEW_REQUIRED", 409);
     if (actor.externalAuthenticated) {
       const user = this.user(actor.id);
       if (!user) throw error("USER_DISABLED", 403);
@@ -540,6 +549,7 @@ class Store {
   }
   deleteEligibility(s) {
     const reasons = [];
+    if (this.recoveryPending()) reasons.push("RECOVERY_REVIEW_REQUIRED");
     if (!s || s.deletedAt) return ["NOT_AVAILABLE"];
     if (this.held(s).length) reasons.push("INVESTIGATION_HOLD");
     if (
@@ -630,6 +640,7 @@ class Store {
     }
   }
   claim({ verificationOnly = false } = {}) {
+    verificationOnly ||= this.recoveryPending();
     const now = this.now(),
       owner = crypto.randomUUID();
     return this.tx(() => {

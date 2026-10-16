@@ -1,6 +1,6 @@
 # Farber Security Command Center
 
-Development handoff, October 15, 2026. This service is separate from the existing Growlink production deployment. It is **not commissioned or asserted to be OCM-compliant**.
+Development handoff, October 16, 2026. This service is separate from the existing Growlink production deployment. It is **not commissioned or asserted to be OCM-compliant**.
 
 The [Ring pilot](../docs/security/PILOT_REPORT.md) demonstrated quiet historical exports, planned-overlap coverage, token refresh and process-crash recovery on camera 1. Eight files (270,672,986 bytes) are preserved privately. A 33 ms discrepancy remains at the earliest requested boundary. This is a sample-level pass, not qualification of an unattended 60/90-day archive. Camera-native authentication, capture-clock validation, vendor policy and long-duration reliability remain unresolved.
 
@@ -16,7 +16,7 @@ The [Ring pilot](../docs/security/PILOT_REPORT.md) demonstrated quiet historical
 - Durable evidence requests with original readback and signed Ed25519 handling manifests. The package is manifest JSON plus individually authenticated original MP4 downloads. It is not a camera-native signature, vendor verifier or OCM-approved evidence format. Distribute the signing-key fingerprint through a separate trusted channel.
 - Pending/active investigation holds block deletion and apply to late arrivals. Controlled deletion requires retention expiry, protected independent storage, two distinct named owners and an execution-time hold check. Shared archive objects fail closed pending group review. Physical deletion defaults off.
 - Per-camera backlog and estimated source-window monitoring, stable transactional scheduling cursors, scoped status views and watchdog escalation. Missing actual intervals remain visible even when jobs complete; see [transfer monitoring](../docs/security/TRANSFER_MONITORING.md).
-- Consistent SQLite control-state backups, restic encryption, exact-snapshot readback and quarantined restores; original footage remains in its separate archive. See [backup recovery](deploy/BACKUP_RECOVERY.md).
+- Consistent SQLite control-state backups, restic encryption, exact-snapshot readback and quarantined restores; original footage remains in its separate archive. A separate recovery-review copy revokes stale access/approvals, clears verification credit and permits guarded archive readback. Release to normal service remains unimplemented pending reconciliation. See [backup recovery](deploy/BACKUP_RECOVERY.md).
 - Hash-chained audit history, inspection records and measured backup-power records. A reported eight-hour test requires an elapsed test interval and continuity assertion; it is not inferred from equipment labels.
 - A separate watchdog process: 30-second checking, 90-second heartbeat timeout, durable incidents and dispatch retries. Optional signed dashboard-readiness probing and a secondary-monitor pulse detect additional failure paths. Provider acceptance and recipient receipt are separate. Five-minute delivery has **not** been demonstrated; see the [monitoring handoff](deploy/WATCHDOG.md).
 
