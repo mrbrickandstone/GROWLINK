@@ -324,7 +324,7 @@ class Store {
         sha256: s.sha256,
         bytes: s.bytes,
         provenance: s.provenance,
-        derivativeReady: !!s.derivative,
+        derivativeReady: this.playbackReady(s),
         independent: !!s.receipt?.independent,
       }));
     return {
@@ -587,14 +587,30 @@ class Store {
       .run(id, JSON.stringify(payload));
     return id;
   }
+  playbackReady(s) {
+    if (
+      !s?.verified ||
+      s.deletedAt ||
+      !/^[a-f0-9]{64}$/.test(s.id) ||
+      s.derivative?.video !== s.id + ".mp4"
+    )
+      return false;
+    try {
+      return fs
+        .lstatSync(path.join(this.root, "derivatives", s.derivative.video))
+        .isFile();
+    } catch {
+      return false;
+    }
+  }
   claim() {
     const now = this.now(),
       owner = crypto.randomUUID();
     const j = this.db
       .prepare(
-        `UPDATE jobs SET state='running',owner=?,lease=?,attempts=attempts+1 WHERE id=(SELECT id FROM jobs WHERE (state='queued' AND next<=?) OR (state='running' AND lease<=?) ORDER BY rowid LIMIT 1) RETURNING *`,
+        `UPDATE jobs SET state='running',owner=?,lease=?,attempts=attempts+1 WHERE id=(SELECT j.id FROM jobs j WHERE ((j.state='queued' AND j.next<=?) OR (j.state='running' AND j.lease<=?)) AND NOT EXISTS (SELECT 1 FROM jobs other WHERE other.id!=j.id AND other.state='running' AND other.lease>? AND COALESCE(json_extract(other.payload,'$.segmentId'),other.id)=COALESCE(json_extract(j.payload,'$.segmentId'),j.id)) ORDER BY j.rowid LIMIT 1) RETURNING *`,
       )
-      .get(owner, now + 600000, now, now);
+      .get(owner, now + 600000, now, now, now);
     return j ? { ...j, payload: JSON.parse(j.payload) } : null;
   }
   finish(j, state, code = null, nextAt) {

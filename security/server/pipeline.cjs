@@ -22,6 +22,7 @@ const FAULT_CODES = [
   "PLAYBACK_BACKLOG",
   "SCHEDULER_FAILED",
   "PIPELINE_OBSERVATION_FAILED",
+  "CACHE_MAINTENANCE_FAILED",
 ];
 const FAULT_LABELS = {
   DISK_SPACE_LOW: "Transfers paused for low disk space",
@@ -42,6 +43,8 @@ const FAULT_LABELS = {
     "Playback copies need recovery; preserved originals are separate",
   SCHEDULER_FAILED: "New transfer scheduling failed",
   PIPELINE_OBSERVATION_FAILED: "Transfer monitoring failed",
+  CACHE_MAINTENANCE_FAILED:
+    "Local cache cleanup needs review; archived originals are unchanged",
 };
 function policyApproved(store) {
   const p = store.get("policy", "ring");

@@ -5,6 +5,12 @@ const { Store } = require("./server/store.cjs");
 const { archiveFor } = require("./server/archive.cjs");
 const { observePipelines } = require("./server/pipeline.cjs");
 const {
+  options: cacheOptions,
+  maintainCache,
+  reconcileCacheState,
+} = require("./server/cache.cjs");
+const cacheConfig = cacheOptions(process.env);
+const {
   DiskGuard,
   JOB_HEADROOM,
   capacityError,
@@ -24,12 +30,15 @@ const disk = new DiskGuard(store.root, {
   paused: store.get("heartbeats", "archive-worker")?.disk?.paused === true,
 });
 let stopped = false,
+  lastCacheCheck = null,
+  cacheFault = false,
   lastError = null,
   activeJob = null;
 async function beat() {
   if (activeJob) store.renew(activeJob);
   const capacity = disk.inspect(activeJob ? 0 : JOB_HEADROOM);
   const faultCodes = [];
+  if (cacheFault) faultCodes.push("CACHE_MAINTENANCE_FAILED");
   if (capacity.code) faultCodes.push(capacity.code);
   if (!capacity.paused && !stopped) {
     try {
@@ -118,12 +127,14 @@ for (const s of ["SIGTERM", "SIGINT"])
   });
 (async () => {
   await beat();
+  reconcileCacheState(store);
   await reconcile(store, archive);
   await beat();
   let ring;
   if (store.get("policy", "ring")?.automatedExportsApproved)
     ring = require("../lib/ring.cjs").client(process.env);
   do {
+    await cacheMaintenance();
     await reconcileHolds(store, archive);
     let job;
     while (
@@ -139,6 +150,13 @@ for (const s of ["SIGTERM", "SIGINT"])
             store,
             archive,
             job,
+          );
+        else if (job.payload.kind === "playback-restore")
+          await require("./server/playback.cjs").processPlayback(
+            store,
+            archive,
+            job,
+            { disk },
           );
         else await transfer(store, archive, job, { ring, disk });
         activeJob = null;
@@ -185,6 +203,7 @@ for (const s of ["SIGTERM", "SIGINT"])
         console.log(JSON.stringify({ job: job.id, state, error: lastError }));
       }
       await beat();
+      await cacheMaintenance();
     }
     await beat();
     if (process.env.SECURITY_ENABLE_PHYSICAL_DELETION === "true") {
@@ -214,3 +233,23 @@ for (const s of ["SIGTERM", "SIGINT"])
     clearInterval(timer);
     store.close();
   });
+async function cacheMaintenance() {
+  if (
+    !cacheConfig.enabled ||
+    (lastCacheCheck !== null && store.now() - lastCacheCheck < 300000)
+  )
+    return;
+  lastCacheCheck = store.now();
+  try {
+    const result = await maintainCache(store, archive, cacheConfig);
+    cacheFault =
+      result.failures?.length > 0 ||
+      store.all("cache-assessments").some((r) => r.error);
+    store.heartbeat("cache-maintenance", {
+      ...result,
+      status: cacheFault ? "failed" : "ok",
+    });
+  } catch {
+    cacheFault = true;
+  }
+}

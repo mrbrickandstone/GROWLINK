@@ -88,6 +88,9 @@ class LocalArchive {
   async setHold() {
     throw error("INDEPENDENT_OBJECT_HOLD_NOT_CONFIGURED", 409);
   }
+  async verifyProtection() {
+    return false;
+  }
   async remove() {
     throw error("LOCAL_REVIEW_DELETION_DISABLED", 409);
   }
@@ -258,6 +261,35 @@ class S3Archive {
     if (out.LegalHold?.Status !== "ON")
       throw error("HOLD_READBACK_FAILED", 502);
     return true;
+  }
+  async verifyProtection(r, minimumUntil) {
+    if (
+      !this.lockApproved ||
+      !r?.independent ||
+      !r.immutableStorageVerified ||
+      !r.versionId ||
+      r.versionId === "null" ||
+      !Number.isSafeInteger(minimumUntil)
+    )
+      return false;
+    try {
+      const head = await this.client.send(
+        new this.sdk.HeadObjectCommand({
+          Bucket: this.bucket,
+          Key: r.objectKey,
+          VersionId: r.versionId,
+          ChecksumMode: "ENABLED",
+        }),
+      );
+      return (
+        head.VersionId === r.versionId &&
+        head.ContentLength === r.size &&
+        head.ObjectLockMode === "COMPLIANCE" &&
+        head.ObjectLockRetainUntilDate?.getTime() >= minimumUntil
+      );
+    } catch {
+      return false;
+    }
   }
   async remove(r) {
     await this.client.send(

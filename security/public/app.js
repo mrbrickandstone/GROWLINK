@@ -32,6 +32,7 @@ let session,
   view = "overview",
   selected = "ring-1",
   currentTimeline,
+  playbackPoll = 0,
   exportResult;
 const titles = {
   overview: "Security overview",
@@ -67,6 +68,7 @@ function allowed(action) {
   if (!u || u.readOnly) return false;
   const map = {
     configure: ["owner", "technician"],
+    playback: ["owner", "operator", "inspector"],
     export: ["owner", "operator", "inspector"],
     hold: ["owner", "operator"],
     release: ["owner"],
@@ -231,6 +233,7 @@ function audit() {
 }
 async function render() {
   if (!data) return;
+  playbackPoll++;
   $("#pageTitle").textContent = titles[view];
   document.querySelectorAll("nav button").forEach((b) => {
     b.classList.toggle("active", b.dataset.view === view);
@@ -248,6 +251,7 @@ async function render() {
   if (view === "evidence" && exportResult) showExport();
 }
 async function loadTimeline() {
+  const generation = ++playbackPoll;
   const f = $("#timelineForm"),
     v = Object.fromEntries(new FormData(f));
   selected = v.camera;
@@ -256,9 +260,10 @@ async function loadTimeline() {
   const t = await api(
     `/api/timeline?camera=${encodeURIComponent(selected)}&start=${start}&end=${end}`,
   );
+  if (generation !== playbackPoll || view !== "playback") return;
   currentTimeline = t;
   $("#timelineResult").innerHTML =
-    `<div class="timeline" aria-label="Verified footage and unverified intervals"></div><div class="timeline-legend"><span>${date(start)}</span><span>Green: verified footage · Hatched: no verified footage</span><span>${date(end)}</span></div><p class="compact">${(t.coveredMs / 1000).toFixed(3)} of ${(t.requestedMs / 1000).toFixed(3)} seconds covered · ${t.gaps.length} unverified intervals</p>${t.gaps.map((g) => `<div class="gap">No verified footage: ${esc(new Date(g.start).toISOString())} → ${esc(new Date(g.end).toISOString())} (${((g.end - g.start) / 1000).toFixed(3)} s)</div>`).join("")}<div class="clip-list">${t.segments.map((s, i) => `<button data-clip="${s.id}" ${s.derivativeReady ? "" : "disabled"}><span>${date(s.start)} → ${date(s.end)}</span><span>${mb(s.bytes)} · ${s.independent ? "archive verified" : "local copy"}</span></button>`).join("")}</div>${!t.segments.length ? '<div class="empty">No verified playback files in this window. Camera online status is not recording evidence.</div>' : ""}`;
+    `<div class="timeline" aria-label="Verified footage and unverified intervals"></div><div class="timeline-legend"><span>${date(start)}</span><span>Green: verified footage · Hatched: no verified footage</span><span>${date(end)}</span></div><p class="compact">${(t.coveredMs / 1000).toFixed(3)} of ${(t.requestedMs / 1000).toFixed(3)} seconds covered · ${t.gaps.length} unverified intervals</p>${t.gaps.map((g) => `<div class="gap">No verified footage: ${esc(new Date(g.start).toISOString())} → ${esc(new Date(g.end).toISOString())} (${((g.end - g.start) / 1000).toFixed(3)} s)</div>`).join("")}<p id="playbackStatus" role="status" aria-live="polite">Choose footage below. Archived originals remain preserved when a playback copy needs preparation.</p><div class="clip-list">${t.segments.map((s) => `<button data-clip="${s.id}" ${s.verified && (s.derivativeReady || allowed("playback")) ? "" : "disabled"}><span>${date(s.start)} → ${date(s.end)}</span><span>${mb(s.bytes)} · ${s.independent ? "archive verified" : "local copy"} · ${s.derivativeReady ? "Play recording" : allowed("playback") ? "Prepare playback" : "Named sign-in required to prepare"}</span></button>`).join("")}</div>${!t.segments.length ? '<div class="empty">No verified playback files in this window. Camera online status is not recording evidence.</div>' : ""}`;
   for (const i of t.intervals) {
     const b = document.createElement("span");
     b.className = "interval";
@@ -276,15 +281,58 @@ async function loadTimeline() {
   }
 }
 function play(id) {
+  playbackPoll++;
   $("#player").hidden = false;
   $(".video-caption").hidden = false;
   const s = currentTimeline.segments.find((s) => s.id === id);
   $("#player").src = `/api/media/${id}/playback`;
+  $("#player").onerror = () => {
+    $("#playbackStatus").textContent =
+      "Playback could not be loaded. Refresh the timeline to check availability and access.";
+  };
+  $("#playbackStatus").textContent =
+    "Playback copy ready. The original remains preserved separately.";
   $("#playing").textContent =
     date(s.start) + " → " + date(s.end) + " · " + s.provenance;
   document
     .querySelectorAll("[data-clip]")
     .forEach((b) => b.classList.toggle("active", b.dataset.clip === id));
+}
+async function selectClip(id) {
+  const s = currentTimeline?.segments.find((s) => s.id === id);
+  if (!s?.verified) return;
+  if (s.derivativeReady) return play(id);
+  if (!allowed("playback"))
+    throw Error("NAMED_SIGN_IN_REQUIRED_TO_PREPARE_PLAYBACK");
+  const generation = ++playbackPoll;
+  const note = $("#playbackStatus");
+  note.textContent = "Requesting playback from the preserved archive…";
+  let status = await api("/api/playback/prepare", { segmentId: id });
+  for (let count = 0; count < 30 && generation === playbackPoll; count++) {
+    if (status.state === "ready") {
+      s.derivativeReady = true;
+      const label = document.querySelector(
+        `[data-clip="${id}"] span:last-child`,
+      );
+      if (label)
+        label.textContent = `${mb(s.bytes)} · ${s.independent ? "archive verified" : "local copy"} · Play recording`;
+      return play(id);
+    }
+    if (["blocked", "failed", "unavailable"].includes(status.state)) {
+      note.textContent =
+        "Playback could not be prepared. " +
+        (status.error || "Select the recording to retry.").replaceAll("_", " ");
+      return;
+    }
+    note.textContent =
+      "Preparing playback from the archive. You can leave this page; the queued job will continue.";
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    if (generation !== playbackPoll) return;
+    status = await api(`/api/playback/${id}/status`);
+  }
+  if (generation === playbackPoll)
+    note.textContent =
+      "Playback is still queued or processing. Select the recording again to check progress.";
 }
 function showExport() {
   const r = exportResult;
@@ -330,7 +378,7 @@ document.addEventListener("click", async (e) => {
       view = "playback";
       await render();
     }
-    if (b.dataset.clip) play(b.dataset.clip);
+    if (b.dataset.clip) await selectClip(b.dataset.clip);
     if (b.dataset.export) {
       exportResult = await api("/api/exports/" + b.dataset.export + "/status");
       showExport();

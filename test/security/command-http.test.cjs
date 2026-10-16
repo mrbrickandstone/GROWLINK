@@ -28,6 +28,79 @@ test("pipeline observations respect camera scope and are withheld from inspector
   overview = await response.json();
   assert.deepEqual(overview.pipelineHealth, []);
 });
+test("HTTP playback preparation is authenticated, CSRF protected, scoped and durable without overstating recording gaps", async (t) => {
+  const f = await fixture(t);
+  let s = f.store.get("segments", f.id);
+  fs.unlinkSync(path.join(f.store.root, "derivatives", f.id + ".mp4"));
+  f.store.put("segments", f.id, {
+    ...s,
+    derivative: { ...s.derivative, video: null },
+  });
+  assert.equal((await f.call(`/api/media/${f.id}/playback`)).status, 409);
+  let timeline = await (
+    await f.call("/api/timeline?camera=one&start=100&end=200")
+  ).json();
+  assert.equal(timeline.coveredMs, 100);
+  assert.equal(timeline.segments[0].derivativeReady, false);
+  assert.equal(
+    (
+      await f.call(
+        "/api/playback/prepare",
+        { segmentId: f.id },
+        { "X-CSRF-Token": "wrong" },
+      )
+    ).status,
+    403,
+  );
+  assert.equal(
+    (
+      await f.call(
+        "/api/playback/prepare",
+        { segmentId: f.id },
+        { "x-test-actor": "inspector" },
+      )
+    ).status,
+    403,
+  );
+  let r = await f.call("/api/playback/prepare", { segmentId: f.id });
+  assert.equal(r.status, 202);
+  assert.equal((await r.json()).state, "queued");
+  await f.call("/api/playback/prepare", { segmentId: f.id });
+  assert.equal(f.store.jobs().length, 1);
+  assert.equal(
+    (await (await f.call(`/api/playback/${f.id}/status`)).json()).state,
+    "queued",
+  );
+  f.store.grant(f.owner, {
+    userId: "inspector",
+    cameraIds: ["one"],
+    start: 100,
+    end: 199,
+    expiresAt: Date.now() + 60000,
+    requestId: "test narrow",
+    purpose: "scope fixture",
+  });
+  assert.equal(
+    (
+      await f.call(`/api/playback/${f.id}/status`, null, {
+        "x-test-actor": "inspector",
+      })
+    ).status,
+    403,
+  );
+  const review = await fixture(t, { review: true });
+  assert.equal(
+    (await review.call("/api/playback/prepare", { segmentId: review.id }))
+      .status,
+    403,
+  );
+  const anonymous = await fixture(t, { anonymous: true });
+  assert.equal(
+    (await anonymous.call("/api/playback/prepare", { segmentId: anonymous.id }))
+      .status,
+    401,
+  );
+});
 async function fixture(t, { review = false, anonymous = false } = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "farber-http-")),
     store = new Store(root),

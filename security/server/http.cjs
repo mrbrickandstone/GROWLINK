@@ -203,6 +203,19 @@ function createServer({
             Number(url.searchParams.get("end")),
           ),
         );
+      const playbackStatus = route.match(
+        /^\/api\/playback\/([a-f0-9]{64})\/status$/,
+      );
+      if (playbackStatus && req.method === "GET")
+        return json(
+          res,
+          200,
+          require("./playback.cjs").playbackStatus(
+            store,
+            actor,
+            playbackStatus[1],
+          ),
+        );
       const media = route.match(
         /^\/api\/media\/([a-f0-9]{64})\/(playback|thumbnail|original)$/,
       );
@@ -264,12 +277,27 @@ function createServer({
             clearInterval(timer);
           }
         }
-        if (!s.derivative) throw error("PLAYBACK_COPY_NOT_READY", 409);
-        const filename = s.derivative[kind === "thumbnail" ? "image" : "video"];
+        const filename =
+          s.derivative?.[kind === "thumbnail" ? "image" : "video"];
+        if (!filename) throw error("PLAYBACK_COPY_NOT_READY", 409);
         if (!/^[a-f0-9]{64}\.(mp4|jpg)$/.test(filename))
           throw error("INVALID_MEDIA_REFERENCE", 500);
-        const file = path.join(store.root, "derivatives", filename),
-          size = fs.statSync(file).size;
+        const file = path.join(store.root, "derivatives", filename);
+        let size;
+        store.tx(() => {
+          check();
+          try {
+            const stat = fs.lstatSync(file);
+            if (!stat.isFile()) throw error("INVALID_MEDIA_REFERENCE", 500);
+            size = stat.size;
+          } catch (e) {
+            if (e.code === "ENOENT")
+              throw error("PLAYBACK_COPY_NOT_READY", 409);
+            throw e;
+          }
+          if (kind === "playback")
+            store.put("cache-access", id, { at: store.now() });
+        });
         let start = 0,
           end = size - 1,
           status = 200;
@@ -375,7 +403,14 @@ function createServer({
       if (req.method === "POST") {
         const input = await body(req);
         let value;
-        if (route === "/api/cameras")
+        if (route === "/api/playback/prepare") {
+          value = require("./playback.cjs").queuePlayback(
+            store,
+            actor,
+            input.segmentId,
+          );
+          return json(res, value.state === "ready" ? 200 : 202, value);
+        } else if (route === "/api/cameras")
           value = store.configureCamera(actor, input);
         else if (route === "/api/holds") value = store.addHold(actor, input);
         else if (route === "/api/holds/release")

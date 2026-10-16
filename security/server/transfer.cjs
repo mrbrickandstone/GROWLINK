@@ -50,11 +50,17 @@ function prepareDirectories(store) {
   for (const dir of ["staging/originals", "derivatives", "exports"])
     fs.mkdirSync(path.join(store.root, dir), { recursive: true, mode: 0o700 });
 }
-async function derive(store, file, id, disk = new DiskGuard(store.root)) {
+async function derive(
+  store,
+  file,
+  id,
+  disk = new DiskGuard(store.root),
+  force = false,
+) {
   const dir = path.join(store.root, "derivatives"),
     video = path.join(dir, id + ".mp4"),
     image = path.join(dir, id + ".jpg");
-  if (!fs.existsSync(video)) {
+  if (force || !fs.existsSync(video)) {
     const temp = path.join(dir, id + "." + crypto.randomUUID() + ".mp4");
     let r;
     try {
@@ -133,6 +139,58 @@ async function derive(store, file, id, disk = new DiskGuard(store.root)) {
   }
   return { video: path.basename(video), image: path.basename(image) };
 }
+async function restoreDerivative(
+  store,
+  archive,
+  s,
+  disk = new DiskGuard(store.root),
+) {
+  disk.assertSpace(JOB_HEADROOM);
+  prepareDirectories(store);
+  if (
+    !/^[a-f0-9]{64}$/.test(s.id) ||
+    s.receipt?.sha256 !== s.sha256 ||
+    s.receipt?.size !== s.bytes ||
+    !Number.isSafeInteger(s.bytes) ||
+    s.bytes < 1
+  )
+    throw error("INVALID_ARCHIVE_RECEIPT", 409);
+  const file = path.join(
+    store.root,
+    "staging",
+    s.id + "." + crypto.randomUUID() + ".restore.part",
+  );
+  let count = 0;
+  const hash = crypto.createHash("sha256");
+  const { Transform } = require("node:stream");
+  try {
+    await pipeline(
+      await archive.read(s.receipt),
+      new Transform({
+        transform(chunk, enc, done) {
+          count += chunk.length;
+          if (count > s.bytes)
+            return done(error("ARCHIVE_READBACK_MISMATCH", 409));
+          hash.update(chunk);
+          done(null, chunk);
+        },
+      }),
+      disk.writer(),
+      fs.createWriteStream(file, { flags: "wx", mode: 0o600 }),
+    );
+    if (count !== s.bytes || hash.digest("hex") !== s.sha256)
+      throw error("ARCHIVE_READBACK_MISMATCH", 409);
+    const derivative = await derive(store, file, s.id, disk, true);
+    derivative.sha256 = await hashFile(
+      path.join(store.root, "derivatives", derivative.video),
+    );
+    return derivative;
+  } finally {
+    try {
+      fs.unlinkSync(file);
+    } catch {}
+  }
+}
 async function transfer(
   store,
   archive,
@@ -156,22 +214,15 @@ async function transfer(
       )
   )
     throw error("DELETION_INTENT_BLOCKS_REIMPORT", 409);
-  if (prior?.verified && (await archive.verify(prior.receipt))) {
-    file = path.join(store.root, "staging", job.id + ".resume.mp4");
-    await pipeline(
-      await archive.read(prior.receipt),
-      disk.writer(),
-      fs.createWriteStream(file, { mode: 0o600 }),
-    );
-    if ((await hashFile(file)) !== prior.sha256)
-      throw error("ARCHIVE_READBACK_MISMATCH", 409);
-    const derivative = await derive(store, file, job.id, disk);
-    derivative.sha256 = await hashFile(
-      path.join(store.root, "derivatives", derivative.video),
-    );
+  if (prior?.verified) {
+    const derivative = await restoreDerivative(store, archive, prior, disk);
     store.tx(() => {
       store.renew(job);
-      store.put("segments", prior.id, { ...prior, derivative });
+      store.put("segments", prior.id, {
+        ...prior,
+        derivative,
+        cache: { ...prior.cache, materializedAt: store.now() },
+      });
       store.finish(job, "complete");
       store.audit({ id: "transfer-worker" }, "playback.derivative.recovered", {
         segmentId: prior.id,
@@ -316,6 +367,7 @@ async function transfer(
   s.derivative.sha256 = await hashFile(
     path.join(store.root, "derivatives", s.derivative.video),
   );
+  s.cache = { materializedAt: store.now() };
   store.tx(() => {
     store.renew(job);
     store.put("segments", s.id, s);
@@ -398,6 +450,7 @@ async function reconcileHolds(store, archive) {
 module.exports = {
   prepareDirectories,
   derive,
+  restoreDerivative,
   transfer,
   reconcile,
   reconcileHolds,
