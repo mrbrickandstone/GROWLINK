@@ -7,24 +7,34 @@ const { hashFile } = require("../lib/security/ring-pilot.cjs");
 const store = new Store(
   process.env.SECURITY_DATA_DIR || path.join(__dirname, "../.security"),
 );
+function initializeSite() {
+  const site = require("./site.json");
+  for (const c of site.cameras) {
+    if (!store.get("cameras", c.id))
+      store.put("cameras", c.id, {
+        ...c,
+        source: "ring",
+        location: site.location,
+        mappingEvidence: site.mappingEvidence,
+        sourceQualified: false,
+        exportEnabled: false,
+        configurationEvidence:
+          "Owner room mapping only; recording qualification pending",
+      });
+  }
+}
 (async () => {
   const [cmd, file] = process.argv.slice(2);
-  if (cmd === "import-pilot") {
+  if (cmd === "init-site") {
+    initializeSite();
+    store.audit({ id: "local-administrator" }, "site.initialized", {
+      recordingEnabled: false,
+    });
+    console.log("Room mapping initialized. Recording exports remain disabled.");
+  } else if (cmd === "import-pilot") {
     const repo = path.resolve(__dirname, "..");
     const actor = { id: "local-pilot-import" };
-    const site = require("./site.json");
-    for (const c of site.cameras) {
-      if (!store.get("cameras", c.id))
-        store.put("cameras", c.id, {
-          ...c,
-          source: "ring",
-          location: site.location,
-          mappingEvidence: site.mappingEvidence,
-          sourceQualified: false,
-          exportEnabled: false,
-          configurationEvidence: "2026-10-13-cloud-inspection.json",
-        });
-    }
+    initializeSite();
     let count = 0;
     for (const run of [
       "media-smoke",
@@ -99,7 +109,7 @@ const store = new Store(
       });
     });
     console.log("Ring worker configuration saved; no credentials printed.");
-  } else throw error("USE_IMPORT_PILOT_ADD_USER_OR_CONFIGURE_RING");
+  } else throw error("USE_INIT_SITE_IMPORT_PILOT_ADD_USER_OR_CONFIGURE_RING");
 })()
   .catch((e) => {
     console.error(

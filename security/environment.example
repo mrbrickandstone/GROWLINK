@@ -11,6 +11,12 @@ SECURITY_OIDC_ACR=
 # Worker and original-download service: IAM role preferred, never browser credentials.
 SECURITY_S3_BUCKET=
 SECURITY_S3_REGION=us-east-1
+# Optional S3-compatible provider; qualify the exact API before use.
+SECURITY_S3_ENDPOINT=
+SECURITY_S3_PATH_STYLE=false
+# For a host without instance credentials, inject scoped credentials privately.
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
 SECURITY_STORAGE_LOCK_APPROVED=false
 SECURITY_ENABLE_PHYSICAL_DELETION=false
 

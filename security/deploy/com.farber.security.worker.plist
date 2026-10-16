@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.farber.security.worker</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/opt/homebrew/bin/node</string>
+		<string>/opt/farber/security/deploy/run-service.cjs</string>
+		<string>worker</string>
+		<string>/Library/Application Support/Farber/config/worker.json</string>
+	</array>
+	<key>WorkingDirectory</key>
+	<string>/opt/farber</string>
+	<key>UserName</key>
+	<string>_farber</string>
+	<key>GroupName</key>
+	<string>_farber</string>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>KeepAlive</key>
+	<true/>
+	<key>ThrottleInterval</key>
+	<integer>15</integer>
+	<key>ExitTimeOut</key>
+	<integer>330</integer>
+	<key>Umask</key>
+	<integer>63</integer>
+	<key>StandardOutPath</key>
+	<string>/Library/Logs/Farber/worker.log</string>
+	<key>StandardErrorPath</key>
+	<string>/Library/Logs/Farber/worker.log</string>
+</dict>
+</plist>

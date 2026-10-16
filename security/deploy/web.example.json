@@ -1,0 +1,14 @@
+{
+  "SECURITY_DATA_DIR": "/Library/Application Support/Farber/data",
+  "SECURITY_S3_BUCKET": "",
+  "SECURITY_S3_REGION": "",
+  "SECURITY_S3_ENDPOINT": "",
+  "AWS_ACCESS_KEY_ID": "",
+  "AWS_SECRET_ACCESS_KEY": "",
+  "SECURITY_HOST": "127.0.0.1",
+  "SECURITY_PORT": "4318",
+  "SECURITY_ORIGIN": "https://security.example.invalid",
+  "SECURITY_OIDC_ISSUER": "",
+  "SECURITY_OIDC_CLIENT_ID": "",
+  "SECURITY_OIDC_CLIENT_SECRET": ""
+}

@@ -13,7 +13,7 @@ Story: an authorized viewer selects a room/camera and historical window; the API
 | Missing footage | Camera 2 returns zero covered seconds for that window; video and previous-camera caption are hidden; full unverified interval is visible |
 | Read-only review | Evidence, hold, deletion and commissioning writes visibly disabled; HTTP tests independently confirm server-side denial |
 | Browser health | No captured warning/error console entries during reviewed flows; screenshots saved privately under `.security/review/` |
-| Full automated suite | `npm test`: **59 passed, 0 failed, 0 skipped**. Includes existing Growlink, monitoring and Ring tests |
+| Full automated suite | `npm test`: **63 passed, 0 failed, 0 skipped**, including the subsequent Mac staging preparation. Includes existing Growlink, monitoring and Ring tests |
 | API authorization | Anonymous API/media denied; cross-site and CSRF writes denied; camera scope, owner MFA, inspector bounds/expiry/revocation, original-export request binding and current worker-time permissions tested |
 | Storage and evidence | Local tamper/readback rejection, exact byte ranges, signed manifest verification/tamper rejection, S3 version/retention/hold/delete command contract and corrupt/unversioned response rejection tested |
 | Durability | Stable job IDs, expired lease reclaim, renewal, stale completion rejection, deferred export processing and synthetic real-FFmpeg transfer/derivative recovery from preserved original tested |
@@ -30,3 +30,9 @@ S3 tests use SDK-response fixtures, HTTP identity tests use explicit test-factor
 See [deployment/access instructions](../../security/README.md). Required: dedicated worker and independent watchdog hosts; private versioned archive and IAM role; named OIDC client/users; approved dedicated Ring worker access; written vendor/source-policy decisions; configured recipients and measured five-minute receipt; capture-time/native-evidence validation; camera 2/3 qualification; site coverage, backup-power and inspection commissioning; independent audit/metadata backups; sustained-load and source-expiry/backlog validation. Commercial-recorder drivers remain explicitly unverified pending supported vendor access.
 
 The prototype does not establish complete 60/90-day retention or OCM compliance. Production acceptance must not be inferred from passing software tests.
+
+## Southampton staging preparation
+
+The owner selected an existing separate `MARCOS-MAC-MINI` for evaluation instead of provisioning an AWS worker. Added two launchd service templates, a role-scoped private JSON configuration loader, read-only host screening, a committed-source release packager and an idempotent `init-site` command. Tests reject exposed/symlinked/malformed service configs, unexpected environment keys, unsafe host conditions and private files in the release allowlist. Fresh initialization preserves the owner room mapping without enabling exports or overwriting existing cameras. Both plists pass `plutil -lint`.
+
+The host-screening command ran on the **development Mac only** and correctly failed: approximately 37.1 GB free, automatic sleep set to one minute and power-restart setting unavailable. These results do not describe the Southampton Mac. No system settings were changed. The Southampton host is not exposed in this task's connection inventory, so its preflight, installation, cold-boot behavior and workload capacity remain untested. See the [Mac handoff](../../security/deploy/MAC_MINI.md) for the B2/DigitalOcean candidate setup and costs. No remote resources, paid accounts, credentials or production settings were changed.
