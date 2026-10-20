@@ -1,5 +1,7 @@
 # GROWLINK
 
+The dedicated [cucumber / coco workspace](/cucumber/) accepts manual measurements and provides cited review checks without a sensor connection. See [CUCUMBER_SETUP.md](CUCUMBER_SETUP.md) for setup, rule scope, storage and validation.
+
 Farber Growlink dashboard for INTERM FLOWERING, recovered from the production Vercel deployment on October 8, 2026.
 
 ## Status

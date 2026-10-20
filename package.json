@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "test": "node --test test.cjs monitor.test.cjs ring.test.cjs learning.test.cjs learning-dom.test.cjs"
+    "test": "node --test test.cjs monitor.test.cjs ring.test.cjs learning.test.cjs learning-dom.test.cjs cucumber.test.cjs cucumber-dom.test.cjs"
   },
   "engines": {
     "node": ">=22"
