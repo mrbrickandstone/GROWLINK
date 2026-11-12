@@ -8,3 +8,16 @@
 
 
 #learningReport details,#learningPanel>details{border-top:1px solid #2a3541;padding:14px 0}#learningPanel summary{cursor:pointer;font-size:14px}#learningReport li{font-size:13px;color:#91a0ae;margin:8px 0}.event-entry{padding:12px 0;border-bottom:1px solid #2a3541}.event-entry strong{font-size:13px}.event-note{grid-column:1/-1}textarea{font:inherit;padding:10px;border-radius:8px;border:1px solid #405446;background:#1c242d;color:#edf4ef;resize:vertical;width:100%}textarea:focus-visible{outline:3px solid #62a7ff}
+
+/* Authentication starts with an empty, dedicated sign-in view.
+   All room details and controls remain hidden until authentication succeeds. */
+body.locked {min-height:100vh}
+body.locked main {max-width:100%;min-height:100vh;padding:24px;display:flex;justify-content:center;align-items:center}
+body.locked #connection {width:min(100%,420px);margin:0;padding:32px}
+body.locked #connection h1 {font-size:25px;letter-spacing:-.5px;margin:0 0 28px}
+body.locked #connection label {display:block;margin-bottom:8px;color:#cbd5df}
+body.locked #connection .login {display:flex;flex-direction:column;gap:14px;margin:0}
+body.locked #connection input {max-width:none;width:100%}
+body.locked #connection button {width:100%}
+body.locked #connection #message {margin:14px 0 0}
+body.locked #connection #message:empty {display:none}

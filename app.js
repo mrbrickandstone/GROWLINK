@@ -47,10 +47,98 @@ function addChartInspection(wrap,svg,points,series,x,y,start,end,color){
  svg.addEventListener('pointerleave',hide);svg.addEventListener('focus',()=>show(index));svg.addEventListener('blur',hide);svg.addEventListener('keydown',event=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(event.key)){event.preventDefault();show(event.key==='Home'?0:event.key==='End'?points.length-1:index+(event.key==='ArrowLeft'?-1:1))}});
 }
 async function request(mode){const r=await fetch(`/api/data?mode=${mode}&hours=${$('range').value}`,{headers:{Authorization:auth},cache:'no-store'});const j=await r.json();if(!r.ok){const e=new Error(j.error||'Request failed');e.status=r.status;throw e}return j}
-function error(e){$('status').textContent='Connection issue';$('message').textContent=e.message;$('connection').hidden=false;$('message').className='error';if(e.status===401){auth='';learningPanel.reset();$('login').hidden=false}if(lastLive){$('updated').textContent='Connection interrupted. Displayed readings are from the last successful request.';for(const item of document.querySelectorAll('.metric small')){item.textContent='Connection interrupted';item.className='stale'}}}
-async function refresh(forceHistory=false){if(busy||!auth)return;busy=true;$('refresh').disabled=true;try{renderLive(await request('live'));ringPanel.load();learningPanel.load(auth);$('status').textContent='Connected · 30 sec refresh';$('connection').hidden=true;$('signout').hidden=false;if(forceHistory||Date.now()-lastHistory>300000){try{renderHistory(await request('history'));lastHistory=Date.now()}catch(e){$('historyStatus').textContent=e.message}try{const weather=await request('weather');renderWeather(weather)}catch(e){$('weatherCharts').replaceChildren();$('weatherStatus').textContent=e.message}}}catch(e){error(e)}finally{busy=false;$('refresh').disabled=false}}
-$('login').onsubmit=e=>{e.preventDefault();const bytes=new TextEncoder().encode('farber:'+$('password').value);auth='Basic '+btoa(Array.from(bytes,b=>String.fromCharCode(b)).join(''));$('password').value='';refresh(true)};$('refresh').onclick=()=>refresh(true);$('range').onchange=()=>refresh(true);$('signout').onclick=()=>{ringPanel.reset();learningPanel.reset();auth='';lastLive=null;lastHistory=0;$('metrics').replaceChildren();$('probes').replaceChildren();$('charts').replaceChildren();clearOperations();$('weatherCharts').replaceChildren();$('weatherStatus').textContent='Connect to load outside temperatures and the five-day forecast.';$('connection').hidden=false;$('login').hidden=false;$('message').className='';$('message').textContent='Enter your dashboard password to load Growlink readings.';$('status').textContent='Locked';$('signout').hidden=true;$('updated').textContent='No live readings loaded.'};setInterval(()=>refresh(),30000);
-fetch('/api/data?mode=live').then(async r=>{if(r.status===503){const j=await r.json();$('message').textContent=j.error}}).catch(()=>{$('message').textContent='Could not reach the dashboard backend. Try refreshing.'});
+function lockDashboard(){
+  ringPanel.reset();
+  learningPanel.reset();
+  auth='';
+  lastLive=null;
+  lastHistory=0;
+  $('password').value='';
+  for(const id of ['metrics','probes','charts','weatherCharts','heroStats','rootSummary','ringCameras','learningStats','learningReport','irrigationEvents']){
+    $(id)?.replaceChildren();
+  }
+  clearOperations();
+  $('settings').hidden=true;
+  $('dashboard').hidden=true;
+  $('dashboardHeader').hidden=true;
+  $('connection').hidden=false;
+  $('login').hidden=false;
+  $('signout').hidden=true;
+  $('status').textContent='Locked';
+  $('updated').textContent='';
+  document.body.classList.remove('authenticated');
+  document.body.classList.add('locked');
+}
+function error(e){
+  if(e.status===401){
+    lockDashboard();
+    $('message').textContent='Incorrect password. Please try again.';
+    $('message').className='error';
+    return;
+  }
+  if(!lastLive){
+    lockDashboard();
+    $('message').textContent='Unable to connect. Please try again.';
+    $('message').className='error';
+    return;
+  }
+  $('status').textContent='Connection issue';
+  $('updated').textContent='Connection interrupted. Displayed readings are from the last successful request.';
+  for(const item of document.querySelectorAll('.metric small')){
+    item.textContent='Connection interrupted';
+    item.className='stale';
+  }
+}
+async function refresh(forceHistory=false){
+  if(busy||!auth)return;
+  busy=true;
+  $('refresh').disabled=true;
+  try{
+    const live=await request('live');
+    renderLive(live);
+    $('dashboard').hidden=false;
+    $('dashboardHeader').hidden=false;
+    $('connection').hidden=true;
+    $('message').textContent='';
+    $('message').className='';
+    document.body.classList.remove('locked');
+    document.body.classList.add('authenticated');
+    $('status').textContent='Connected · 30 sec refresh';
+    $('signout').hidden=false;
+    ringPanel.load();
+    learningPanel.load(auth);
+    if(forceHistory||Date.now()-lastHistory>300000){
+      try{
+        renderHistory(await request('history'));
+        lastHistory=Date.now();
+      }catch(e){$('historyStatus').textContent=e.message}
+      try{
+        renderWeather(await request('weather'));
+      }catch(e){
+        $('weatherCharts').replaceChildren();
+        $('weatherStatus').textContent=e.message;
+      }
+    }
+  }catch(e){error(e)}
+  finally{busy=false;$('refresh').disabled=false}
+}
+$('login').onsubmit=e=>{
+  e.preventDefault();
+  const bytes=new TextEncoder().encode('farber:'+$('password').value);
+  auth='Basic '+btoa(Array.from(bytes,b=>String.fromCharCode(b)).join(''));
+  $('password').value='';
+  refresh(true);
+};
+$('refresh').onclick=()=>refresh(true);
+$('range').onchange=()=>refresh(true);
+$('signout').onclick=()=>{
+  lockDashboard();
+  $('message').textContent='';
+  $('message').className='';
+};
+window.addEventListener('pageshow',()=>{$('password').value=''});
+$('password').value='';
+setInterval(()=>refresh(),30000);
 
 const defaults={flipDate:'2026-09-15',lightsPct:85,tTemp:82,tRh:60,tVpd:1.35,tPpfd:1000,tVwc:45,tEc:3};let cfg={...defaults};try{cfg={...defaults,...JSON.parse(localStorage.getItem('farberProfileV2')||'{}')}}catch{}
 const targetMap={'Room temperature':['tTemp',2,'°F'],'Relative humidity':['tRh',4,'%'],'Growlink VPD':['tVpd',.18,'kPa'],'PPFD':['tPpfd',125,'µmol/m²/s']};
