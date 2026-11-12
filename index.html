@@ -1,6 +1,18 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Farber Command Center</title><link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/style.css"></head><body>
-<header><div><span class="eyebrow">HARVEST / FARBER DRIVE</span><h1>Command Center</h1><p>INTERM FLOWERING · Read-only monitoring</p></div><div class="status"><span id="status">Not connected</span><button id="settingsBtn">⚙ Settings</button><button id="refresh">Refresh</button><button id="signout" hidden>Lock</button></div></header>
-<main><section id="connection" class="panel"><h2>Connect your dashboard</h2><p id="message">Enter your dashboard password to load Growlink readings.</p><form id="login"><label for="password">Dashboard password</label><div class="login"><input id="password" type="password" autocomplete="current-password" required><button>Connect</button></div></form></section>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Farber Command Center</title><link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/style.css"></head><body class="locked">
+<header id="dashboardHeader" hidden><div><span class="eyebrow">HARVEST / FARBER DRIVE</span><h1>Command Center</h1><p>INTERM FLOWERING · Read-only monitoring</p></div><div class="status"><span id="status">Not connected</span><button id="settingsBtn">⚙ Settings</button><button id="refresh">Refresh</button><button id="signout" hidden>Lock</button></div></header>
+<main>
+<section id="connection" class="panel" aria-labelledby="loginTitle">
+  <h1 id="loginTitle">Farber Command Center</h1>
+  <form id="login" autocomplete="off">
+    <label for="password">Password</label>
+    <div class="login">
+      <input id="password" name="login-password" type="password" value="" autocomplete="off" autocapitalize="off" spellcheck="false" required>
+      <button type="submit">Sign In</button>
+    </div>
+  </form>
+  <p id="message" role="status" aria-live="polite"></p>
+</section>
+<div id="dashboard" hidden>
 <section id="settings" class="panel" hidden><h2>Room settings & targets</h2><p>Targets are dashboard references. Saving does not change Growlink controls.</p><form id="settingsForm"><div class="formgrid" id="fields"></div><button>Save settings</button></form></section>
 <section class="panel hero"><div><span class="eyebrow" id="phase">FLOWERING</span><h2 class="flower">Flower Day <span id="flowerDay">—</span></h2><p>Trop Cherry × GMO · INTERM FLOWERING</p><div class="tags"><span>Canopy 48′ × 40′</span><span>~450 plants</span><span id="lightTag"></span><span>12 / 12 · 11 PM–11 AM</span></div><small>Room profile · Light power is entered manually</small></div><div class="heroStats" id="heroStats"></div></section>
 <div class="dashboard-grid"><section class="panel environment"><div class="section-head"><h2>Environment</h2><small>Live Growlink readings</small></div><section class="metrics" id="metrics" aria-label="Room readings"></section></section><section class="panel"><h2>Farber alerts</h2><div id="alerts">Connect to evaluate readings.</div></section></div>
@@ -21,5 +33,5 @@
 <label class="event-note">Notes / description of change<textarea id="eventNote" maxlength="1000" rows="3"></textarea></label>
 </div><p id="eventTimezone" class="muted"></p><button id="eventSave">Save event</button><p id="eventMessage" role="status"></p></form></details>
 <details><summary>Recent event log</summary><div id="irrigationEvents"></div></details></section>
-<footer id="updated">No live readings loaded.</footer></main><script src="/learning.js"></script><script src="/app.js"></script><script src="/ring.js"></script></body></html>
+<footer id="updated">No live readings loaded.</footer></div></main><script src="/learning.js"></script><script src="/app.js"></script><script src="/ring.js"></script></body></html>
 
